@@ -1,6 +1,8 @@
 // Lokalna zamjena za Supabase u testu:
 //   /rest/v1/*  -> pravi PostgREST nad pravim Postgresom (ista šema i pravila pristupa)
 //   /auth/v1/*  -> jednostavna zamjena za Supabase Auth (izdaje JWT iste strukture)
+//   /storage/v1/* -> zamjena za Supabase Storage: upis ide kroz ista pravila pristupa
+//                   (storage.objects u bazi), fajl se čuva u memoriji
 //   sve ostalo  -> izgrađena aplikacija (SPA)
 import http from 'node:http';
 import crypto from 'node:crypto';
@@ -95,7 +97,49 @@ async function auth(req, res, url, body) {
   return fail(res, 404, 'not_found', 'not found');
 }
 
-const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.woff2': 'font/woff2', '.svg': 'image/svg+xml' };
+const files = new Map(); // "bucket/putanja" -> { type, body }
+const LIMIT = 2 * 1024 * 1024;
+const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+
+async function storage(req, res, url) {
+  const up = url.pathname.match(/^\/storage\/v1\/object\/(?!public\/)([^/]+)\/(.+)$/);
+  if (up && req.method === 'POST') {
+    const claims = verify((req.headers.authorization || '').replace(/^Bearer /, ''));
+    if (!claims || claims.role !== 'authenticated') return send(res, 403, { statusCode: '403', error: 'Unauthorized', message: 'new row violates row-level security policy' });
+    const chunks = [];
+    for await (const c of req) chunks.push(c);
+    const body = Buffer.concat(chunks);
+    const type = String(req.headers['content-type'] || '').split(';')[0];
+    if (!IMAGE_TYPES.includes(type)) return send(res, 415, { statusCode: '415', error: 'invalid_mime_type', message: `mime type ${type} is not supported` });
+    if (body.length > LIMIT) return send(res, 413, { statusCode: '413', error: 'Payload too large', message: 'The object exceeded the maximum allowed size' });
+    const [bucket, name] = [up[1], decodeURIComponent(up[2])];
+    const c = await db.connect();
+    try {
+      await c.query('begin');
+      await c.query('set local role authenticated');
+      await c.query("select set_config('request.jwt.claim.sub', $1, true)", [claims.sub]);
+      const r = await c.query('insert into storage.objects (bucket_id, name, owner, owner_id) values ($1, $2, $3, $4) returning id', [bucket, name, claims.sub, claims.sub]);
+      await c.query('commit');
+      files.set(`${bucket}/${name}`, { type, body });
+      return send(res, 200, { Id: r.rows[0].id, Key: `${bucket}/${name}` });
+    } catch (e) {
+      await c.query('rollback').catch(() => {});
+      return send(res, 400, { statusCode: '403', error: 'Unauthorized', message: String(e.message) });
+    } finally {
+      c.release();
+    }
+  }
+  const pub = url.pathname.match(/^\/storage\/v1\/object\/public\/(.+)$/);
+  if (pub && req.method === 'GET') {
+    const f = files.get(decodeURIComponent(pub[1]));
+    if (!f) return send(res, 404, { message: 'not found' });
+    res.writeHead(200, { 'Content-Type': f.type, 'Cache-Control': 'max-age=31536000' });
+    return res.end(f.body);
+  }
+  return send(res, 404, { message: 'not found' });
+}
+
+const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.woff2': 'font/woff2', '.svg': 'image/svg+xml', '.png': 'image/png', '.webmanifest': 'application/manifest+json' };
 
 http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://localhost:${PORT}`);
@@ -108,6 +152,7 @@ http.createServer(async (req, res) => {
       proxied.on('error', (e) => send(res, 502, { message: String(e) }));
       return req.pipe(proxied);
     }
+    if (url.pathname.startsWith('/storage/v1')) return await storage(req, res, url);
     if (url.pathname.startsWith('/auth/v1')) {
       let raw = '';
       for await (const c of req) raw += c;

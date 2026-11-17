@@ -1,5 +1,5 @@
-import type { CSSProperties, ReactNode } from 'react';
-import { NavLink } from 'react-router-dom';
+import { useEffect, useState, type CSSProperties, type ReactNode } from 'react';
+import { NavLink, useLocation } from 'react-router-dom';
 import { useI18n } from '../lib/i18n';
 import { useSession } from '../lib/session';
 import { Wordmark } from './ui';
@@ -20,6 +20,9 @@ function inkOn(hex: string): string {
 export function Shell({ children }: { children: ReactNode }) {
   const { t } = useI18n();
   const { memberships, current, selectClinic, signOut, profile } = useSession();
+  const { pathname } = useLocation();
+  const [more, setMore] = useState(false);
+  useEffect(() => setMore(false), [pathname]);
   if (!current) return null;
 
   const { clinic, role } = current;
@@ -30,22 +33,34 @@ export function Shell({ children }: { children: ReactNode }) {
     '--accent': clinic.accent_color,
   } as CSSProperties;
 
+  // Na telefonu su u donjoj traci glavne stavke; ostale su pod "Više".
   const links = [
-    { to: '/', label: t('nav.overview'), end: true },
+    { to: '/', label: t('nav.overview'), end: true, main: true },
     ...(isStaff
       ? [
-          { to: '/calendar', label: t('nav.calendar'), end: false },
-          { to: '/patients', label: t('nav.patients'), end: false },
-          { to: '/team', label: t('nav.team'), end: false },
+          { to: '/calendar', label: t('nav.calendar'), end: false, main: true },
+          { to: '/patients', label: t('nav.patients'), end: false, main: true },
+          { to: '/finances', label: t('nav.finances'), end: false, main: true },
+          { to: '/services', label: t('nav.services'), end: false, main: false },
+          { to: '/posts', label: t('nav.posts'), end: false, main: false },
+          { to: '/team', label: t('nav.team'), end: false, main: false },
         ]
       : []),
-    { to: '/settings', label: t('nav.settings'), end: false },
+    { to: '/settings', label: t('nav.settings'), end: false, main: false },
   ];
+  const moreActive = links.some((l) => !l.main && pathname.startsWith(l.to));
 
   return (
     <div className="shell" style={brand}>
       <header className="shell-side">
-        <Wordmark />
+        {clinic.logo_url ? (
+          <span className="shell-logo">
+            <img src={clinic.logo_url} alt="" />
+            <span className="sr-only">Dental Pro</span>
+          </span>
+        ) : (
+          <Wordmark />
+        )}
         <div className="shell-clinic">
           {memberships && memberships.length > 1 ? (
             <select aria-label={t('nav.clinic')} value={clinic.id} onChange={(e) => selectClinic(e.target.value)}>
@@ -60,12 +75,15 @@ export function Shell({ children }: { children: ReactNode }) {
           )}
           <span>{t(`role.${role}`)}</span>
         </div>
-        <nav className="shell-nav" aria-label={t('app.name')}>
+        <nav className={`shell-nav${more ? ' shell-nav-open' : ''}`} aria-label={t('app.name')}>
           {links.map((l) => (
-            <NavLink key={l.to} to={l.to} end={l.end}>
+            <NavLink key={l.to} to={l.to} end={l.end} className={l.main ? undefined : 'nav-extra'}>
               {l.label}
             </NavLink>
           ))}
+          <button type="button" className={`nav-more${moreActive ? ' active' : ''}`} aria-expanded={more} onClick={() => setMore(!more)}>
+            {t('nav.more')}
+          </button>
         </nav>
         <div className="shell-foot">
           <span className="shell-user">{profile?.full_name || profile?.email || ''}</span>

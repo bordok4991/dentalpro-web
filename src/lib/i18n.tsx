@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { LOCALES, type Locale } from './types';
+import { bsMore, enMore, hrMore, srMore } from './i18n-more';
 
 const bs = {
   'app.name': 'Dental Pro',
@@ -368,6 +369,7 @@ const bs = {
   'err.notAllowed': 'Nemaš dozvolu za ovu izmjenu.',
   'err.network': 'Nema veze sa serverom. Provjeri internet i probaj ponovo.',
   'err.generic': 'Nešto nije uspjelo. Probaj ponovo.',
+  ...bsMore,
 };
 
 export type Dict = typeof bs;
@@ -450,6 +452,7 @@ const hr: Dict = {
   'err.trialExists': 'Već imaš ordinaciju u probnom razdoblju.',
   'err.network': 'Nema veze s poslužiteljem. Provjeri internet i pokušaj ponovo.',
   'err.generic': 'Nešto nije uspjelo. Pokušaj ponovo.',
+  ...hrMore,
 };
 
 const sr: Dict = {
@@ -511,6 +514,7 @@ const sr: Dict = {
   'err.notAllowed': 'Nemaš dozvolu za ovu izmenu.',
   'err.network': 'Nema veze sa serverom. Proveri internet i probaj ponovo.',
   'err.generic': 'Nešto nije uspelo. Probaj ponovo.',
+  ...srMore,
 };
 
 const en: Dict = {
@@ -880,6 +884,7 @@ const en: Dict = {
   'err.notAllowed': 'You do not have permission for this change.',
   'err.network': 'Cannot reach the server. Check your connection and try again.',
   'err.generic': 'Something went wrong. Try again.',
+  ...enMore,
 };
 
 const DICTS: Record<Locale, Dict> = { bs, hr, sr, en };

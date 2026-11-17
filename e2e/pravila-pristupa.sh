@@ -169,6 +169,185 @@ has "anonimni nema pristup terminima" "$(as anon "select count(*) from appointme
 eq "recepcija vidi sve termine ordinacije" "$(as $RA "select count(*) from appointments" | tail -1)" "4"
 eq "termini su u audit logu" "$(admin "select count(*) > 0 from audit_log where table_name='appointments' and clinic_id='$CA'")" "t"
 
+echo "== Cjenovnik"
+svc() { as $1 "insert into services (clinic_id,name,price,duration_min,online) values ('${5:-$CA}','$2',$3,$4,${6:-true}) returning id" | sed -n 3p; }
+S1=$(svc $OA "Kompozitni ispun" 80 45); S2=$(svc $OA "Kontrolni pregled" 30 30); S3=$(svc $OA "Izbjeljivanje" 300 60 $CA false)
+SB=$(svc $OB "Pregled B" 20 30 $CB)
+eq "vlasnik pravi cjenovnik" "$(admin "select count(*) from services where clinic_id='$CA'")" "3"
+has "doktor ne mijenja cjenovnik" "$(as $DA "insert into services (clinic_id,name,price) values ('$CA','X',1)")" "row-level security"
+eq "recepcija vidi cjenovnik" "$(as $RA "select count(*) from services" | tail -1)" "3"
+has "isti naziv usluge je odbijen" "$(as $OA "insert into services (clinic_id,name,price) values ('$CA','kompozitni ispun ',1)")" "services_clinic_name_idx"
+has "negativna cijena je odbijena" "$(as $OA "insert into services (clinic_id,name,price) values ('$CA','Y',-5)")" "violates check"
+has "usluga se ne briše, nego isključuje" "$(as $OA "delete from services where id='$S3'")" "permission denied"
+eq "vlasnik B ne vidi cjenovnik ordinacije A" "$(as $OB "select count(*) from services where clinic_id='$CA'" | tail -1)" "0"
+eq "pacijent vidi samo usluge za online zakazivanje" "$(as $P2 "select count(*) from services" | tail -1)" "2"
+
+echo "== Pacijentski nalog"
+pinv() { as $1 "insert into clinic_invites (clinic_id,email,role,patient_id) values ('${4:-$CA}','$2','patient','$3') returning token" | sed -n 3p; }
+TP=$(pinv $DA pac2@t.ba $PT1)
+eq "doktor poziva pacijenta iz kartona" "$(admin "select count(*) from clinic_invites where token='$TP' and invited_by='$DA'")" "1"
+eq "recepcija vidi pacijentsku pozivnicu" "$(as $RA "select count(*) from clinic_invites where patient_id='$PT1'" | tail -1)" "1"
+eq "doktor vidi samo pacijentske pozivnice" "$(as $DA "select count(*) from clinic_invites" | tail -1)" "1"
+has "pozivnica za osoblje iz kartona je odbijena" "$(as $DA "insert into clinic_invites (clinic_id,email,role,patient_id) values ('$CA','x@t.ba','doctor','$PT1')")" "samo pacijentska\|row-level security"
+has "pacijentska pozivnica bez kartona je odbijena za osoblje" "$(as $DA "insert into clinic_invites (clinic_id,email,role) values ('$CA','x@t.ba','patient')")" "row-level security"
+has "pozivnica za karton druge ordinacije je odbijena" "$(pinv $OB x@t.ba $PT1 $CB)" "ne pripada"
+TPD=$(pinv $DA doca@t.ba $PT2)
+has "član osoblja ne postaje pacijent iste ordinacije" "$(as $DA "select accept_invite('$TPD')")" "već radi u ordinaciji"
+eq "doktor i dalje ima svoju ulogu" "$(as $DA "select my_role('$CA')" | tail -1)" "doctor"
+eq "neiskorištena pacijentska pozivnica se povlači" "$(as $RA "delete from clinic_invites where token='$TPD' returning 1" | grep -c '^1$')" "1"
+eq "prije povezivanja pacijent ne vidi karton" "$(as $P2 "select count(*) from patients" | tail -1)" "0"
+eq "pacijent prihvata pozivnicu" "$(as $P2 "select accept_invite('$TP')" | tail -1)" "$CA"
+eq "karton je povezan s nalogom" "$(admin "select user_id from patients where id='$PT1'")" "$P2"
+eq "pacijent vidi samo svoj karton" "$(as $P2 "select string_agg(first_name, ',') from patients" | tail -1)" "Ana"
+eq "pacijent ne vidi medicinske podatke" "$(as $P2 "select count(*) from patient_medical" | tail -1)" "0"
+eq "pacijent ne vidi zapise u kartonu" "$(as $P2 "select count(*) from patient_entries" | tail -1)" "0"
+eq "pacijent ne čita tabelu zuba direktno" "$(as $P2 "select count(*) from tooth_status" | tail -1)" "0"
+eq "pacijent vidi stanje svojih zuba" "$(as $P2 "select string_agg(tooth || ':' || condition, ',' order by tooth) from my_teeth('$CA')" | tail -1)" "36:krunica,85:nedostaje"
+eq "drugi pacijent ne vidi tuđe zube" "$(as $P1 "select count(*) from my_teeth('$CA')" | tail -1)" "0"
+eq "stranac ne vidi zube" "$(as $OUT "select count(*) from my_teeth('$CA')" | tail -1)" "0"
+has "osoblje ne može ručno povezati nalog s kartonom" "$(as $OA "update patients set user_id='$P1' where id='$PT2'")" "pozivnicom"
+has "nov karton se ne može odmah vezati za nalog" "$(as $RA "insert into patients (clinic_id,first_name,last_name,user_id) values ('$CA','X','Y','$P1')")" "row-level security"
+TP2=$(pinv $RA pac2@t.ba $PT2)
+has "jedan nalog ne dobija dva kartona iste ordinacije" "$(as $P2 "select accept_invite('$TP2')")" "drugim kartonom"
+TP3=$(pinv $RA pac1-novi@t.ba $PT1)
+has "karton povezan s drugim nalogom se ne preuzima" "$(as $P1 "select accept_invite('$TP3')")" "drugim nalogom"
+eq "pacijent ne vidi termine u tabeli" "$(as $P2 "select count(*) from appointments" | tail -1)" "0"
+eq "pacijent vidi svoje termine bez internih napomena" "$(as $P2 "select count(*) from my_appointments('$CA')" | tail -1)" "4"
+eq "pacijent vidi doktore ordinacije" "$(as $P2 "select string_agg(full_name, ',' order by full_name) from clinic_doctors('$CA')" | tail -1)" "Doktor A,Vlasnik A"
+eq "stranac ne vidi doktore ordinacije" "$(as $OUT "select count(*) from clinic_doctors('$CA')" | tail -1)" "0"
+
+echo "== Online zakazivanje"
+D2="((current_date + 2) + time"
+TZ="at time zone 'Europe/Sarajevo'"
+admin "update appointments set status='otkazan' where patient_id='$PT1' and starts_at > '2030-01-01'" >/dev/null
+has "zakazivanje je isključeno dok ga vlasnik ne uključi" "$(as $P2 "select count(*) from available_slots('$CA','$DA',current_date + 2,30)")" "nije uključeno"
+as $OA "update clinics set online_booking=true, working_hours='{\"0\":[\"08:00\",\"16:00\"],\"1\":[\"08:00\",\"16:00\"],\"2\":[\"08:00\",\"16:00\"],\"3\":[\"08:00\",\"16:00\"],\"4\":[\"08:00\",\"16:00\"],\"5\":[\"08:00\",\"16:00\"],\"6\":[\"08:00\",\"12:00\"]}' where id='$CA'" >/dev/null
+SL=$(as $P2 "select count(*) from available_slots('$CA','$DA',current_date + 2,30)" | tail -1)
+SLX=$(admin "select case extract(dow from current_date + 2) when 6 then 8 else 16 end")
+eq "slobodni termini u radnom vremenu (korak 30 min)" "$SL" "$SLX"
+eq "nema termina više od 90 dana unaprijed" "$(as $P2 "select count(*) from available_slots('$CA','$DA',current_date + 91,30)" | tail -1)" "0"
+has "recepcija nije doktor za online termine" "$(as $P2 "select count(*) from available_slots('$CA','$RA',current_date + 2,30)")" "ne radi u ovoj"
+bk() { as $1 "select book_appointment('$CA','${4:-$DA}','$2',$3,'Boli me zub')"; }
+B1=$(bk $P2 $S2 "$D2 '09:00') $TZ" | tail -1)
+eq "pacijent zakazuje termin online" "$(admin "select patient_id || '/' || booked_online || '/' || status || '/' || service || '/' || (ends_at - starts_at) from appointments where id='$B1'")" "$PT1/true/zakazan/Kontrolni pregled/00:30:00"
+has "isti termin više nije slobodan" "$(bk $P2 $S2 "$D2 '09:00') $TZ")" "nije slobodan"
+eq "zauzeto vrijeme nestaje sa spiska" "$(as $P2 "select count(*) from available_slots('$CA','$DA',current_date + 2,30)" | tail -1)" "$((SLX-1))"
+has "termin izvan radnog vremena je odbijen" "$(bk $P2 $S2 "$D2 '20:00') $TZ")" "nije slobodan"
+has "termin mimo koraka od 30 minuta je odbijen" "$(bk $P2 $S2 "$D2 '10:10') $TZ")" "nije slobodan"
+has "usluga koja nije za online je odbijena" "$(bk $P2 $S3 "$D2 '11:00') $TZ")" "ne može zakazati online"
+has "usluga druge ordinacije je odbijena" "$(bk $P2 $SB "$D2 '11:00') $TZ")" "ne može zakazati online"
+has "pacijent bez kartona ne zakazuje" "$(bk $P1 $S2 "$D2 '11:00') $TZ")" "nije povezan"
+has "osoblje ne koristi online zakazivanje" "$(bk $RA $S2 "$D2 '11:00') $TZ")" "za pacijente"
+B2=$(bk $P2 $S2 "$D2 '11:00') $TZ" | tail -1); B3=$(bk $P2 $S2 "$D2 '12:00') $TZ" $OA | tail -1)
+has "najviše 3 zakazana termina online" "$(bk $P2 $S2 "$D2 '13:00') $TZ")" "Već imate 3"
+as $P2 "select confirm_my_appointment('$B1')" >/dev/null
+eq "pacijent potvrđuje dolazak" "$(admin "select status from appointments where id='$B1'")" "potvrdjen"
+has "drugi pacijent ne dira tuđi termin" "$(as $P1 "select cancel_my_appointment('$B1')")" "ne postoji"
+as $P2 "select cancel_my_appointment('$B2')" >/dev/null
+eq "pacijent otkazuje termin dovoljno unaprijed" "$(admin "select status from appointments where id='$B2'")" "otkazan"
+BS=$(as $RA "insert into appointments (clinic_id,patient_id,doctor_id,starts_at,ends_at,service) values ('$CA','$PT1','$DA',date_trunc('hour', now()) + interval '3 hours',date_trunc('hour', now()) + interval '3 hours 30 minutes','Kontrola') returning id" | sed -n 3p)
+has "otkazivanje manje od 24 sata prije ide telefonom" "$(as $P2 "select cancel_my_appointment('$BS')")" "24 sata"
+
+echo "== Plan terapije"
+PL1=$(as $DA "insert into treatment_plans (clinic_id,patient_id,title,valid_until) values ('$CA','$PT1','Sanacija zuba',current_date + 30) returning id" | sed -n 3p)
+item() { as $1 "insert into plan_items (plan_id,clinic_id,patient_id,service_id,tooth,description,unit_price,qty) values ('$2','$CA','$PT1',$3,$4,'$5',$6,${7:-1}) returning id" | sed -n 3p; }
+I1=$(item $DA $PL1 "'$S1'" 36 "Kompozitni ispun" 80); I2=$(item $DA $PL1 "'$S2'" null "Kontrolni pregled" 30 2)
+eq "doktor pravi plan sa stavkama" "$(admin "select count(*) from plan_items where plan_id='$PL1'")" "2"
+has "plan počinje kao nacrt" "$(as $DA "insert into treatment_plans (clinic_id,patient_id,title,status) values ('$CA','$PT1','X','poslan')")" "nacrt"
+has "recepcija ne pravi planove" "$(as $RA "insert into treatment_plans (clinic_id,patient_id,title) values ('$CA','$PT1','X')")" "row-level security"
+has "zub 19 u stavci je odbijen" "$(item $DA $PL1 null 19 "X" 1)" "violates check"
+has "usluga druge ordinacije u planu je odbijena" "$(item $DA $PL1 "'$SB'" null "X" 1)" "cjenovnika"
+has "stavka tuđeg plana je odbijena" "$(as $OB "insert into plan_items (plan_id,clinic_id,patient_id,description,unit_price) values ('$PL1','$CB','$PTB','X',1)")" "ne pripada"
+eq "recepcija vidi plan" "$(as $RA "select count(*) from treatment_plans" | tail -1)" "1"
+eq "pacijent ne vidi nacrt" "$(as $P2 "select count(*) from treatment_plans" | tail -1)/$(as $P2 "select count(*) from plan_items" | tail -1)" "0/0"
+PL0=$(as $DA "insert into treatment_plans (clinic_id,patient_id,title) values ('$CA','$PT1','Prazan') returning id" | sed -n 3p)
+has "plan bez stavki se ne šalje" "$(as $DA "update treatment_plans set status='poslan' where id='$PL0'")" "nijednu stavku"
+eq "nacrt plana se može obrisati" "$(as $DA "delete from treatment_plans where id='$PL0' returning 1" | grep -c '^1$')" "1"
+eq "recepcija ne mijenja plan" "$(as $RA "update treatment_plans set title='Hak' where id='$PL1' returning 1" | grep -c '^1$')" "0"
+eq "doktor šalje plan pacijentu" "$(as $DA "update treatment_plans set status='poslan' where id='$PL1' returning sent_at is not null" | sed -n 3p)" "t"
+eq "pacijent vidi poslani plan i stavke" "$(as $P2 "select count(*) from treatment_plans" | tail -1)/$(as $P2 "select count(*) from plan_items" | tail -1)" "1/2"
+has "stavke poslanog plana se ne mijenjaju" "$(as $DA "update plan_items set unit_price=1 where id='$I1'")" "samo dok je plan nacrt"
+eq "stavka poslanog plana se ne briše" "$(as $DA "delete from plan_items where id='$I1' returning 1" | grep -c '^1$')" "0"
+has "urađeno se označava tek nakon prihvatanja" "$(as $DA "update plan_items set done_at=now() where id='$I1'")" "prihvaćenog plana"
+has "drugi pacijent ne odgovara na tuđi plan" "$(as $P1 "select respond_plan('$PL1', true)")" "ne postoji"
+as $P2 "select respond_plan('$PL1', true)" >/dev/null
+eq "pacijent prihvata plan u aplikaciji" "$(admin "select status || '/' || responded_by from treatment_plans where id='$PL1'")" "prihvacen/$P2"
+has "na plan se odgovara samo jednom" "$(as $P2 "select respond_plan('$PL1', false)")" "već odgovoreno"
+has "popust prihvaćenog plana se ne mijenja" "$(as $DA "update treatment_plans set discount_pct=50 where id='$PL1'")" "Prihvaćeni plan"
+has "prihvaćeni plan se ne vraća u nacrt" "$(as $DA "update treatment_plans set status='nacrt' where id='$PL1'")" "ne može preći"
+eq "pacijent ne mijenja plan direktno" "$(as $P2 "update treatment_plans set status='zavrsen' where id='$PL1' returning 1" | grep -c '^1$')" "0"
+has "vrijeme slanja upisuje baza" "$(as $DA "update treatment_plans set sent_at='2000-01-01' where id='$PL1' returning sent_at::date" | sed -n 3p)" "$(date +%Y)"
+eq "doktor označava stavku urađenom" "$(as $DA "update plan_items set done_at=now() where id='$I1' returning done_by" | sed -n 3p)" "$DA"
+eq "stanje: urađeno, uplaćeno, dug" "$(as $RA "select charged || '/' || paid || '/' || balance from patient_balances where patient_id='$PT1'" | tail -1)" "80.00/0.00/80.00"
+
+echo "== Uplate"
+pay() { as $1 "insert into payments (clinic_id,patient_id,plan_id,amount,method) values ('$CA','${4:-$PT1}',$3,$2,'gotovina') returning id" | sed -n 3p; }
+PY1=$(pay $RA 50 "'$PL1'")
+eq "recepcija upisuje uplatu" "$(admin "select amount || '/' || created_by from payments where id='$PY1'")" "50.00/$RA"
+has "uplata u tuđe ime je odbijena" "$(as $RA "insert into payments (clinic_id,patient_id,amount,created_by) values ('$CA','$PT1',5,'$OA')")" "row-level security"
+has "uplata od 0 KM je odbijena" "$(pay $RA 0 null)" "violates check"
+has "uplata na plan drugog pacijenta je odbijena" "$(pay $RA 10 "'$PL1'" $PT2)" "ne pripada ovom pacijentu"
+eq "stanje nakon uplate" "$(as $OA "select charged || '/' || paid || '/' || balance from patient_balances where patient_id='$PT1'" | tail -1)" "80.00/50.00/30.00"
+eq "pacijent vidi samo svoje stanje" "$(as $P2 "select count(*) || '/' || max(balance) from patient_balances" | tail -1)" "1/30.00"
+eq "pacijent vidi svoju uplatu" "$(as $P2 "select count(*) from payments" | tail -1)" "1"
+has "pacijent ne upisuje uplate" "$(as $P2 "insert into payments (clinic_id,patient_id,amount) values ('$CA','$PT1',5)")" "row-level security"
+has "uplata se ne mijenja" "$(as $RA "update payments set amount=5 where id='$PY1'")" "samo stornirati"
+has "storno traži razlog" "$(as $RA "update payments set voided_at=now() where id='$PY1'")" "razlog"
+eq "storno ne radi neko ko nije upisao uplatu" "$(as $DA "update payments set void_reason='x' where id='$PY1' returning 1" | grep -c '^1$')" "0"
+eq "recepcija stornira svoju uplatu" "$(as $RA "update payments set void_reason='Pogrešan iznos' where id='$PY1' returning voided_by" | sed -n 3p)" "$RA"
+has "stornirana uplata se ne vraća" "$(as $OA "update payments set void_reason='y' where id='$PY1'")" "već stornirana"
+eq "storno vraća dug" "$(as $RA "select balance from patient_balances where patient_id='$PT1'" | tail -1)" "80.00"
+eq "pacijent ne vidi storniranu uplatu" "$(as $P2 "select count(*) from payments" | tail -1)" "0"
+has "uplata se ne briše" "$(as $OA "delete from payments where id='$PY1'")" "permission denied"
+eq "vlasnik B ne vidi uplate ordinacije A" "$(as $OB "select count(*) from payments" | tail -1)" "0"
+PL2=$(as $DA "insert into treatment_plans (clinic_id,patient_id,title,discount_pct) values ('$CA','$PT1','Izbjeljivanje',10) returning id" | sed -n 3p)
+I3=$(item $DA $PL2 "'$S3'" null "Izbjeljivanje" 100)
+as $DA "update treatment_plans set status='prihvacen' where id='$PL2'" >/dev/null
+as $DA "update plan_items set done_at=now() where id='$I3'" >/dev/null
+eq "prihvaćeno u ordinaciji, s popustom od 10%" "$(as $RA "select charged from patient_balances where patient_id='$PT1'" | tail -1)" "170.00"
+eq "cjenovnik, planovi i uplate su u audit logu" "$(admin "select count(distinct table_name) from audit_log where clinic_id='$CA' and table_name in ('services','treatment_plans','plan_items','payments')")" "4"
+
+echo "== Novosti i savjeti"
+PO1=$(as $DA "insert into clinic_posts (clinic_id,kind,title,body) values ('$CA','savjet','Kako prati zube','Dva puta dnevno po dvije minute.') returning id" | sed -n 3p)
+has "recepcija ne piše objave" "$(as $RA "insert into clinic_posts (clinic_id,kind,title,body) values ('$CA','novost','X','Y')")" "row-level security"
+eq "pacijent ne vidi neobjavljeno" "$(as $P2 "select count(*) from clinic_posts" | tail -1)" "0"
+eq "objava dobija vrijeme objave" "$(as $DA "update clinic_posts set is_published=true where id='$PO1' returning published_at is not null" | sed -n 3p)" "t"
+eq "pacijent vidi objavljeni savjet" "$(as $P2 "select count(*) from clinic_posts" | tail -1)" "1"
+PO2=$(as $OA "insert into clinic_posts (clinic_id,kind,title,body,valid_until,is_published) values ('$CA','novost','Popust','10% popusta',current_date - 1,true) returning id" | sed -n 3p)
+eq "istekla novost se pacijentu ne prikazuje" "$(as $P2 "select count(*) from clinic_posts where kind='novost'" | tail -1)" "0"
+eq "osoblje vidi i isteklu novost" "$(as $RA "select count(*) from clinic_posts" | tail -1)" "2"
+eq "vlasnik B ne vidi objave ordinacije A" "$(as $OB "select count(*) from clinic_posts" | tail -1)" "0"
+eq "stranac ne vidi objave" "$(as $OUT "select count(*) from clinic_posts" | tail -1)" "0"
+has "pacijent ne piše objave" "$(as $P2 "insert into clinic_posts (clinic_id,kind,title,body) values ('$CA','novost','X','Y')")" "row-level security"
+eq "doktor ne briše tuđu objavu" "$(as $DA "delete from clinic_posts where id='$PO2' returning 1" | grep -c '^1$')" "0"
+has "autor objave se ne mijenja" "$(as $OA "update clinic_posts set created_by='$OA' where id='$PO1'")" "ne može mijenjati"
+eq "vlasnik briše objavu" "$(as $OA "delete from clinic_posts where id='$PO2' returning 1" | grep -c '^1$')" "1"
+
+echo "== Postavke ordinacije"
+has "radno vrijeme koje završava prije početka je odbijeno" "$(as $OA "update clinics set working_hours='{\"1\":[\"16:00\",\"08:00\"]}' where id='$CA'")" "violates check"
+has "nepoznat dan u radnom vremenu je odbijen" "$(as $OA "update clinics set working_hours='{\"9\":[\"08:00\",\"16:00\"]}' where id='$CA'")" "violates check"
+has "nepoznata valuta je odbijena" "$(as $OA "update clinics set currency='USD' where id='$CA'")" "violates check"
+has "nepoznata vremenska zona je odbijena" "$(as $OA "update clinics set timezone='Mars/Baza' where id='$CA'")" "violates check"
+eq "doktor ne uključuje online zakazivanje" "$(as $DA "update clinics set online_booking=false where id='$CA' returning 1" | grep -c '^1$')" "0"
+
+echo "== Slike"
+up() { as $1 "insert into storage.objects (bucket_id,name) values ('media','$2') returning 1"; }
+eq "vlasnik postavlja logo" "$(up $OA "clinics/$CA/logo/logo-abc123.png" | grep -c '^1$')" "1"
+has "doktor ne mijenja logo" "$(up $DA "clinics/$CA/logo/logo-def456.png")" "row-level security"
+eq "doktor postavlja sliku objave" "$(up $DA "clinics/$CA/posts/post-abc123.jpg" | grep -c '^1$')" "1"
+has "recepcija ne postavlja slike objava" "$(up $RA "clinics/$CA/posts/post-def456.jpg")" "row-level security"
+has "vlasnik B ne postavlja logo ordinacije A" "$(up $OB "clinics/$CA/logo/logo-ghi789.png")" "row-level security"
+eq "pacijent postavlja svoju sliku profila" "$(up $P2 "users/$P2/avatar-abc123.jpg" | grep -c '^1$')" "1"
+has "slika se ne postavlja u tuđi folder" "$(up $P2 "users/$DA/avatar-abc123.jpg")" "row-level security"
+has "fajl koji nije slika je odbijen" "$(up $P2 "users/$P2/skripta-abc123.html")" "row-level security"
+has "anonimni ne postavlja slike" "$(as anon "insert into storage.objects (bucket_id,name) values ('media','users/x/abcdefgh.jpg')")" "permission denied\|row-level security"
+
+echo "== Ukidanje pristupa pacijentu"
+has "pacijent ne ukida tuđi pristup" "$(as $P1 "select unlink_patient_account('$PT1')")" "Nemate pravo"
+as $RA "select unlink_patient_account('$PT1')" >/dev/null
+eq "nakon ukidanja pacijent ne vidi karton, zube ni uplate" "$(as $P2 "select (select count(*) from patients) || '/' || (select count(*) from my_teeth('$CA')) || '/' || (select count(*) from treatment_plans)" | tail -1)" "0/0/0"
+eq "karton ostaje, bez naloga" "$(admin "select count(*) from patients where id='$PT1' and user_id is null")" "1"
+
 echo "== Zaštite"
 has "vlasnik ne može ručno učlaniti tuđi nalog" "$(as $OA "insert into clinic_members (clinic_id,user_id,role) values ('$CA','$OUT','patient')")" "row-level security"
 has "članstvo se ne može preseliti na drugog korisnika" "$(as $OA "update clinic_members set user_id='$OUT' where user_id='$P2'")" "ne mogu mijenjati"

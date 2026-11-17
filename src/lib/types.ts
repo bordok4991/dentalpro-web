@@ -24,7 +24,16 @@ export interface Clinic {
   status: ClinicStatus;
   trial_ends_at: string | null;
   created_at: string;
+  timezone: string;
+  currency: Currency;
+  online_booking: boolean;
+  working_hours: WorkingHours;
 }
+
+export type Currency = 'KM' | 'EUR' | 'RSD';
+export const CURRENCIES: Currency[] = ['KM', 'EUR', 'RSD'];
+/** Radno vrijeme po danu u sedmici ("0" = nedjelja … "6" = subota). Dan bez ključa je neradni. */
+export type WorkingHours = Partial<Record<'0' | '1' | '2' | '3' | '4' | '5' | '6', [string, string]>>;
 
 export interface Profile {
   id: string;
@@ -47,7 +56,7 @@ export interface Member {
   specialty: string | null;
   is_active: boolean;
   created_at: string;
-  profile: { full_name: string; email: string | null; phone: string | null } | null;
+  profile: { full_name: string; email: string | null; phone: string | null; avatar_url: string | null } | null;
 }
 
 export interface Invite {
@@ -60,6 +69,7 @@ export interface Invite {
   expires_at: string;
   accepted_at: string | null;
   created_at: string;
+  patient_id: string | null;
 }
 
 export type Sex = 'f' | 'm';
@@ -79,6 +89,7 @@ export interface Patient {
   is_archived: boolean;
   created_at: string;
   updated_at: string;
+  user_id: string | null;
 }
 
 export type PatientInput = Pick<Patient, 'first_name' | 'last_name' | 'date_of_birth' | 'sex' | 'phone' | 'email' | 'address' | 'city'>;
@@ -153,6 +164,7 @@ export interface Appointment {
   note: string | null;
   status: AppointmentStatus;
   created_at: string;
+  booked_online: boolean;
   patient: { first_name: string; last_name: string; card_number: number; phone: string | null } | null;
   doctor: { full_name: string } | null;
 }
@@ -164,4 +176,132 @@ export interface AppointmentInput {
   ends_at: string;
   service: string;
   note: string | null;
+}
+
+// ---------- Cjenovnik ----------
+export interface Service {
+  id: string;
+  clinic_id: string;
+  name: string;
+  price: number;
+  duration_min: number;
+  is_active: boolean;
+  online: boolean;
+}
+export type ServiceInput = Pick<Service, 'name' | 'price' | 'duration_min' | 'is_active' | 'online'>;
+
+// ---------- Plan terapije ----------
+export type PlanStatus = 'nacrt' | 'poslan' | 'prihvacen' | 'odbijen' | 'zavrsen';
+
+export interface PlanItem {
+  id: string;
+  plan_id: string;
+  service_id: string | null;
+  tooth: number | null;
+  description: string;
+  unit_price: number;
+  qty: number;
+  position: number;
+  done_at: string | null;
+  created_at: string;
+}
+export type PlanItemInput = Pick<PlanItem, 'service_id' | 'tooth' | 'description' | 'unit_price' | 'qty'>;
+
+export interface TreatmentPlan {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  title: string;
+  note: string | null;
+  discount_pct: number;
+  valid_until: string | null;
+  status: PlanStatus;
+  created_at: string;
+  updated_at: string;
+  sent_at: string | null;
+  responded_at: string | null;
+  responded_by: string | null;
+  items: PlanItem[];
+}
+export type PlanInput = Pick<TreatmentPlan, 'title' | 'note' | 'discount_pct' | 'valid_until'>;
+
+// ---------- Uplate ----------
+export type PaymentMethod = 'gotovina' | 'kartica' | 'prenos';
+export const PAYMENT_METHODS: PaymentMethod[] = ['gotovina', 'kartica', 'prenos'];
+
+export interface Payment {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  plan_id: string | null;
+  amount: number;
+  method: PaymentMethod;
+  paid_on: string;
+  note: string | null;
+  created_by: string | null;
+  created_at: string;
+  voided_at: string | null;
+  void_reason: string | null;
+  patient?: { first_name: string; last_name: string; card_number: number } | null;
+}
+export interface PaymentInput {
+  patient_id: string;
+  plan_id: string | null;
+  amount: number;
+  method: PaymentMethod;
+  paid_on: string;
+  note: string | null;
+}
+
+export interface Balance {
+  patient_id: string;
+  clinic_id: string;
+  charged: number;
+  paid: number;
+  balance: number;
+}
+
+// ---------- Novosti i savjeti ----------
+export type PostKind = 'novost' | 'savjet';
+export interface Post {
+  id: string;
+  clinic_id: string;
+  kind: PostKind;
+  title: string;
+  body: string;
+  image_url: string | null;
+  valid_until: string | null;
+  is_published: boolean;
+  published_at: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+export type PostInput = Pick<Post, 'kind' | 'title' | 'body' | 'image_url' | 'valid_until' | 'is_published'>;
+
+// ---------- Aplikacija za pacijente ----------
+export interface Doctor {
+  user_id: string;
+  full_name: string;
+  avatar_url: string | null;
+  specialty: string | null;
+  role: Role;
+}
+
+export interface MyAppointment {
+  id: string;
+  starts_at: string;
+  ends_at: string;
+  service: string;
+  status: AppointmentStatus;
+  doctor_id: string;
+  doctor_name: string | null;
+  booked_online: boolean;
+}
+
+export interface MyTooth {
+  tooth: number;
+  condition: ToothCondition;
+  endo: boolean;
+  surfaces: Partial<Record<SurfaceKey, SurfaceMark>>;
 }

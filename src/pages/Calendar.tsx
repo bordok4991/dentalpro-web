@@ -248,7 +248,12 @@ export function Calendar() {
                               {hhmm(a.starts_at)} {a.patient ? `${a.patient.first_name} ${a.patient.last_name}` : ''}
                             </strong>
                             <span>{a.service}</span>
-                            {height >= 60 && <span className="appt-status">{t(`cal.status.${a.status}` as Key)}</span>}
+                            {height >= 60 && (
+                              <span className="appt-status">
+                                {t(`cal.status.${a.status}` as Key)}
+                                {a.booked_online && ` · ${t('cal.online')}`}
+                              </span>
+                            )}
                           </button>
                         );
                       })}
@@ -363,7 +368,10 @@ function AppointmentDetails({
         <dt>{t('appt.doctor')}</dt>
         <dd>{appt.doctor?.full_name}</dd>
         <dt>{t('appt.service')}</dt>
-        <dd>{appt.service}</dd>
+        <dd>
+          {appt.service}
+          {appt.booked_online && <span className="tag">{t('cal.bookedOnline')}</span>}
+        </dd>
         {appt.patient?.phone && (
           <>
             <dt>{t('patient.phone')}</dt>

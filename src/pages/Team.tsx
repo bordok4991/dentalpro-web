@@ -4,6 +4,7 @@ import { errorKey } from '../lib/errors';
 import { inviteLink } from '../lib/api';
 import { api, useSession } from '../lib/session';
 import { INVITABLE_ROLES, ROLES, type Invite, type Member, type Role } from '../lib/types';
+import { Avatar } from '../components/Avatar';
 import { Button, Field, Loading, Notice, SelectField } from '../components/ui';
 
 function hasSpecialty(role: Role): boolean {
@@ -100,7 +101,7 @@ export function Team() {
           <Loading />
         ) : (
           <ul className="rows">
-            {members.map((m) => (
+            {members.filter((m) => m.role !== 'patient').map((m) => (
               <MemberRow key={m.id} member={m} isSelf={m.user_id === user?.id} canEdit={isOwner} act={act} />
             ))}
           </ul>
@@ -154,11 +155,12 @@ function InviteForm({ clinicId, onCancel, onCreated }: { clinicId: string; onCan
     <form className="block block-form" onSubmit={submit}>
       <h2>{t('team.inviteTitle')}</h2>
       <p className="lead">{t('team.inviteLead')}</p>
+      <p className="hint">{t('team.patientsFromKarton')}</p>
       {error && <Notice kind="error">{t(error)}</Notice>}
       <div className="grid-2">
         <Field label={t('team.inviteEmail')} type="email" autoComplete="off" required value={email} onChange={(e) => setEmail(e.target.value)} />
         <SelectField label={t('team.role')} value={role} onChange={(e) => setRole(e.target.value as Role)}>
-          {INVITABLE_ROLES.map((r) => (
+          {INVITABLE_ROLES.filter((r) => r !== 'patient').map((r) => (
             <option key={r} value={r}>
               {t(`role.${r}`)}
             </option>
@@ -251,7 +253,8 @@ function MemberRow({ member, isSelf, canEdit, act }: { member: Member; isSelf: b
   }
 
   return (
-    <li className={`rowitem${member.is_active ? '' : ' rowitem-off'}`}>
+    <li className={`rowitem rowitem-person${member.is_active ? '' : ' rowitem-off'}`}>
+      <Avatar url={member.profile?.avatar_url} name={name} size={44} />
       <div className="rowitem-main">
         <strong>
           {name}

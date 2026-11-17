@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { daysUntil, useI18n } from '../lib/i18n';
 import { api, useSession } from '../lib/session';
-import type { Appointment, Clinic } from '../lib/types';
+import type { Appointment, Clinic, Doctor } from '../lib/types';
+import { Avatar } from '../components/Avatar';
+import { hhmm, localDay } from '../lib/format';
 import type { Key } from '../lib/i18n';
 
 export function StatusBanner({ clinic }: { clinic: Clinic }) {
@@ -47,7 +49,7 @@ export function Overview() {
     setCounts(null);
     Promise.all([api.members(clinicId), role === 'owner' ? api.invites(clinicId) : Promise.resolve([]), api.patientCount(clinicId)])
       .then(([m, i, p]) => {
-        if (alive) setCounts({ members: m.filter((x) => x.is_active).length, invites: i.length, patients: p });
+        if (alive) setCounts({ members: m.filter((x) => x.is_active && x.role !== 'patient').length, invites: i.length, patients: p });
       })
       .catch(() => {
         /* brojevi su pomoćni; pregled radi i bez njih */
@@ -73,6 +75,7 @@ export function Overview() {
       <StatusBanner clinic={clinic} />
 
       {isStaff && <TodayBlock clinicId={clinic.id} />}
+      {isStaff && clinic.online_booking && <OnlineBlock clinicId={clinic.id} />}
 
       <section className="block">
         <div className="block-head">
@@ -83,7 +86,10 @@ export function Overview() {
             </Link>
           )}
         </div>
-        <p className="clinic-name">{clinic.name}</p>
+        <div className="clinic-id">
+          {clinic.logo_url && <Avatar url={clinic.logo_url} name={clinic.name} size={56} square />}
+          <p className="clinic-name">{clinic.name}</p>
+        </div>
         {hasContact ? (
           <dl className="facts">
             {clinic.doctor_name && (
@@ -118,6 +124,7 @@ export function Overview() {
         ) : (
           <p className="muted">{t('overview.noContact')}</p>
         )}
+        <DoctorsRow clinicId={clinic.id} />
       </section>
 
       {isStaff && (
@@ -211,6 +218,76 @@ function TodayBlock({ clinicId }: { clinicId: string }) {
           )}
         </>
       )}
+    </section>
+  );
+}
+
+/** Doktori ordinacije sa slikama (slika se postavlja u Postavkama). */
+export function DoctorsRow({ clinicId }: { clinicId: string }) {
+  const { t } = useI18n();
+  const [list, setList] = useState<Doctor[]>([]);
+  useEffect(() => {
+    let alive = true;
+    api
+      .clinicDoctors(clinicId)
+      .then((d) => alive && setList(d))
+      .catch(() => alive && setList([]));
+    return () => {
+      alive = false;
+    };
+  }, [clinicId]);
+  if (list.length === 0) return null;
+  return (
+    <ul className="doctors" aria-label={t('overview.doctors')}>
+      {list.map((d) => (
+        <li key={d.user_id}>
+          <Avatar url={d.avatar_url} name={d.full_name} size={56} />
+          <span>
+            <strong>{d.full_name}</strong>
+            <span className="meta">{d.specialty || t(d.role === 'owner' ? 'role.doctor' : `role.${d.role}`)}</span>
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** Termini koje su pacijenti sami zakazali u zadnjih 7 dana. */
+function OnlineBlock({ clinicId }: { clinicId: string }) {
+  const { t, date } = useI18n();
+  const [list, setList] = useState<Appointment[] | null>(null);
+  useEffect(() => {
+    let alive = true;
+    api
+      .recentOnline(clinicId)
+      .then((r) => alive && setList(r))
+      .catch(() => alive && setList([]));
+    return () => {
+      alive = false;
+    };
+  }, [clinicId]);
+  if (!list || list.length === 0) return null;
+  return (
+    <section className="block block-accent">
+      <div className="block-head">
+        <h2>{t('overview.online')}</h2>
+        <Link className="text-link" to="/calendar">
+          {t('overview.openCalendar')}
+        </Link>
+      </div>
+      <ul className="rows appt-rows">
+        {list.map((a) => (
+          <li key={a.id}>
+            <Link className="appt-row" to={`/calendar?dan=${localDay(a.starts_at)}`}>
+              <strong>{date(a.starts_at)}</strong>
+              <span>{hhmm(a.starts_at)}</span>
+              <span>{a.patient ? `${a.patient.first_name} ${a.patient.last_name}` : ''}</span>
+              <span>{a.service}</span>
+              <span className={`tag appt-st-${a.status}`}>{t(`cal.status.${a.status}` as Key)}</span>
+            </Link>
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }

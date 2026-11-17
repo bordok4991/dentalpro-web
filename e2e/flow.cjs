@@ -36,6 +36,14 @@ const ok = (name, cond, extra = '') => { cond ? pass++ : fail++; console.log(`  
     await page.getByLabel('Lozinka').fill(password);
     await page.getByRole('button', { name: 'Prijavi se' }).click();
   }
+  // Na telefonu su neke stavke menija pod "Više".
+  async function navTo(p, name) {
+    const link = p.locator('.shell-nav').getByRole('link', { name, exact: true });
+    if (!(await link.isVisible())) await p.locator('.shell-nav .nav-more').click();
+    await link.click();
+  }
+  const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+  const PNG = path.join(__dirname, '..', 'public', 'icon-192.png');
   async function logout(page) {
     await page.getByRole('button', { name: 'Odjavi se' }).click();
     await page.waitForURL('**/login');
@@ -79,7 +87,7 @@ const ok = (name, cond, extra = '') => { cond ? pass++ : fail++; console.log(`  
   await shot(page, '03-pregled');
 
   console.log('== Postavke ordinacije');
-  await page.locator('.shell-nav').getByRole('link', { name: 'Postavke', exact: true }).click();
+  await navTo(page, 'Postavke');
   await page.getByLabel('Adresa').fill('Titova 12');
   await page.getByLabel('Telefon ordinacije').fill('+387 33 123 456');
   await page.getByLabel('Boja isticanja (#RRGGBB)').fill('zelena');
@@ -95,12 +103,12 @@ const ok = (name, cond, extra = '') => { cond ? pass++ : fail++; console.log(`  
   ok('boje ordinacije se odmah primjenjuju', brand.toUpperCase() === '#123B36', brand);
   await shot(page, '04-postavke');
   await page.reload();
-  await page.locator('.shell-nav').getByRole('link', { name: 'Pregled', exact: true }).click();
+  await navTo(page, 'Pregled');
   await waitText(page, 'Titova 12, Sarajevo');
   ok('izmjene ostaju nakon ponovnog učitavanja', await has(page, '+387 33 123 456'));
 
   console.log('== Tim i pozivnice');
-  await page.locator('.shell-nav').getByRole('link', { name: 'Tim', exact: true }).click();
+  await navTo(page, 'Tim');
   await waitText(page, 'Nema pozivnica na čekanju.');
   async function invite(email, role, specialty) {
     await page.getByRole('button', { name: 'Pozovi člana' }).click();
@@ -112,6 +120,7 @@ const ok = (name, cond, extra = '') => { cond ? pass++ : fail++; console.log(`  
     return page.locator('.block-accent input').inputValue();
   }
   await page.getByRole('button', { name: 'Pozovi člana' }).click();
+  ok('pozivnica za tim ne nudi ulogu pacijenta', (await page.getByLabel('Uloga').locator('option[value="patient"]').count()) === 0 && (await has(page, 'Pacijente u aplikaciju pozivaš iz njihovog kartona.')));
   await page.getByLabel('Email osobe').fill('osoba@ordinacija');
   await page.getByRole('button', { name: 'Napravi pozivnicu' }).click();
   await waitText(page, 'Upiši ispravan email.');
@@ -123,7 +132,7 @@ const ok = (name, cond, extra = '') => { cond ? pass++ : fail++; console.log(`  
   await waitText(page, 'Kopirano');
   ok('link se kopira u međuspremnik', (await page.evaluate(() => navigator.clipboard.readText())) === linkDoc);
   await shot(page, '05-tim-pozivnica');
-  const linkPat = await invite('pacijent@example.test', 'patient');
+  const linkAsi = await invite('asistent@example.test', 'assistant');
   const linkRec = await invite('recepcija@example.test', 'reception');
   ok('tri pozivnice su na čekanju', (await page.locator('.rows').nth(1).locator('.rowitem').count()) === 3);
   await page.locator('.rows').nth(1).locator('.rowitem', { hasText: 'recepcija@example.test' }).getByRole('button', { name: 'Poništi' }).click();
@@ -138,11 +147,11 @@ const ok = (name, cond, extra = '') => { cond ? pass++ : fail++; console.log(`  
   await register(page, { name: 'Emir Begić', email: 'ortodont@example.test' });
   await waitText(page, 'Dobar dan, Emir');
   ok('novi član ulazi u ordinaciju odmah nakon registracije', await has(page, 'Tvoja uloga: Specijalista') && await has(page, 'Demo Dental'));
-  await page.locator('.shell-nav').getByRole('link', { name: 'Tim', exact: true }).click();
+  await navTo(page, 'Tim');
   await waitText(page, 'Članove može mijenjati samo vlasnik ordinacije.');
   ok('specijalista vidi tim, ali ga ne može mijenjati', (await page.getByRole('button', { name: 'Uredi' }).count()) === 0 && (await page.getByRole('button', { name: 'Pozovi člana' }).count()) === 0);
   ok('specijalista ne vidi pozivnice', !(await has(page, 'Pozivnice na čekanju')));
-  await page.locator('.shell-nav').getByRole('link', { name: 'Postavke', exact: true }).click();
+  await navTo(page, 'Postavke');
   await waitText(page, 'Moj profil');
   ok('specijalista ne može mijenjati podatke ordinacije', await has(page, 'Podatke ordinacije mijenja vlasnik.') && (await page.getByRole('button', { name: 'Sačuvaj ordinaciju' }).count()) === 0);
   await shot(page, '06-specijalista-tim');
@@ -159,7 +168,7 @@ const ok = (name, cond, extra = '') => { cond ? pass++ : fail++; console.log(`  
   await page.getByRole('button', { name: 'Pridruži se' }).click();
   await waitText(page, 'To ne izgleda kao pozivnica.');
   ok('besmislen unos pozivnice je odbijen', true);
-  await page.getByLabel('Link ili kod pozivnice').fill(linkPat);
+  await page.getByLabel('Link ili kod pozivnice').fill(linkAsi);
   await page.getByRole('button', { name: 'Pridruži se' }).click();
   await waitText(page, 'Pozivnica je poslana na drugi email.');
   ok('tuđa pozivnica je odbijena', true);
@@ -175,31 +184,19 @@ const ok = (name, cond, extra = '') => { cond ? pass++ : fail++; console.log(`  
   await page.getByRole('button', { name: 'Odjavi se' }).click();
   await page.waitForURL('**/login');
 
-  console.log('== Pacijent');
-  await page.goto(linkPat);
+  console.log('== Asistent');
+  await page.goto(linkAsi);
   await page.waitForURL('**/login');
-  await register(page, { name: 'Amina Pacijent', email: 'pacijent@example.test' });
-  await waitText(page, 'Tvoja uloga: Pacijent');
-  ok('pacijent ulazi u ordinaciju', true);
-  ok('pacijent nema stavku Tim', (await page.locator('.shell-nav').getByRole('link', { name: 'Tim', exact: true }).count()) === 0);
-  await page.goto(BASE + '/team');
-  await waitText(page, 'Tvoja uloga: Pacijent');
-  ok('adresa /team pacijenta vraća na pregled', new URL(page.url()).pathname === '/');
-  const patientSees = await page.evaluate(async () => {
-    const k = Object.keys(localStorage).find((x) => x.endsWith('-auth-token'));
-    const tok = JSON.parse(localStorage.getItem(k)).access_token;
-    const get = (p) => fetch('/rest/v1/' + p, { headers: { Authorization: 'Bearer ' + tok } }).then((r) => r.json());
-    return { members: (await get('clinic_members?select=id')).length, profiles: (await get('profiles?select=id')).length, invites: (await get('clinic_invites?select=id')).length };
-  });
-  ok('pacijent iz baze dobija samo svoje podatke', patientSees.members === 1 && patientSees.profiles === 1 && patientSees.invites === 0, JSON.stringify(patientSees));
-  await shot(page, '07-pacijent');
+  await register(page, { name: 'Aida Asistent', email: 'asistent@example.test' });
+  await waitText(page, 'Tvoja uloga: Asistent');
+  ok('asistent ulazi u ordinaciju i vidi kalendar', (await page.locator('.shell-nav').getByRole('link', { name: 'Kalendar', exact: true }).count()) === 1);
   await logout(page);
 
   console.log('== Vlasnik upravlja timom');
   await login(page, 'vlasnik@example.test');
   await waitText(page, 'Aktivnih članova: 3');
   ok('vlasnik vidi 3 aktivna člana i 0 pozivnica', await has(page, 'Pozivnica na čekanju: 0'));
-  await page.locator('.shell-nav').getByRole('link', { name: 'Tim', exact: true }).click();
+  await navTo(page, 'Tim');
   const rowDoc = page.locator('.rows').first().locator('.rowitem', { hasText: 'Emir Begić' });
   await rowDoc.waitFor();
   ok('vlasnik vidi ime, email i specijalnost člana', (await rowDoc.innerText()).includes('ortodont@example.test') && (await rowDoc.innerText()).includes('Specijalista, ortodont'));
@@ -215,7 +212,7 @@ const ok = (name, cond, extra = '') => { cond ? pass++ : fail++; console.log(`  
   await rowDoc.getByRole('button', { name: 'Deaktiviraj' }).click();
   await rowDoc.getByText('Deaktiviran').waitFor();
   ok('član je deaktiviran', true);
-  const rowPat = page.locator('.rows').first().locator('.rowitem', { hasText: 'Amina Pacijent' });
+  const rowPat = page.locator('.rows').first().locator('.rowitem', { hasText: 'Aida Asistent' });
   await rowPat.getByRole('button', { name: 'Uredi' }).click();
   await rowPat.getByRole('button', { name: 'Ukloni' }).click();
   ok('uklanjanje traži potvrdu', await has(page, 'Uklonjeni član gubi pristup ordinaciji.') && (await rowPat.count()) === 1);
@@ -233,7 +230,7 @@ const ok = (name, cond, extra = '') => { cond ? pass++ : fail++; console.log(`  
   await login(page, 'vlasnik@example.test');
   await waitText(page, 'U kartoteci: 0');
   ok('pregled broji pacijente iz baze', true);
-  const nav = (name) => page.locator('.shell-nav').getByRole('link', { name, exact: true }).click();
+  const nav = (name) => navTo(page, name);
   await nav('Pacijenti');
   await waitText(page, 'Kartoteka je prazna. Dodaj prvog pacijenta.');
   ok('prazna kartoteka nudi prvi korak', true);
@@ -434,10 +431,280 @@ const ok = (name, cond, extra = '') => { cond ? pass++ : fail++; console.log(`  
   ok('karton prikazuje naredni termin', (await page.locator('.appt-row').count()) === 1 && (await has(page, 'Potvrđen')));
   await logout(page);
 
+  console.log('== Cjenovnik i plan terapije');
+  await login(page, 'vlasnik@example.test');
+  await waitText(page, 'Dobar dan, Selma');
+  await navTo(page, 'Cjenovnik');
+  await waitText(page, 'Cjenovnik je prazan.');
+  async function addService(name, price, minutes, online = true) {
+    await page.getByRole('button', { name: 'Dodaj uslugu' }).click();
+    const f = page.locator('form', { has: page.getByRole('button', { name: 'Sačuvaj uslugu' }) });
+    await f.getByLabel('Naziv usluge').fill(name);
+    await f.getByLabel('Cijena (KM)').fill(price);
+    await f.getByLabel('Trajanje').selectOption(String(minutes));
+    if (!online) await f.getByLabel('Pacijenti je mogu sami zakazati u aplikaciji').uncheck();
+    await f.getByRole('button', { name: 'Sačuvaj uslugu' }).click();
+  }
+  await addService('Kompozitni ispun', '80', 45);
+  await page.locator('.rowitem', { hasText: 'Kompozitni ispun' }).waitFor();
+  ok('usluga je u cjenovniku s cijenom u KM', (await page.locator('.rowitem', { hasText: 'Kompozitni ispun' }).innerText()).includes('80,00 KM'));
+  await addService('Kontrolni pregled', '30', 30);
+  await page.locator('.rowitem', { hasText: 'Kontrolni pregled' }).waitFor();
+  await addService('kompozitni ispun', '1', 30);
+  await waitText(page, 'Usluga s tim nazivom već postoji u cjenovniku.');
+  ok('ista usluga se ne dodaje dvaput', true);
+  await page.getByRole('button', { name: 'Odustani' }).click();
+  await addService('Izbjeljivanje', '250,50', 60, false);
+  await page.locator('.rowitem', { hasText: 'Izbjeljivanje' }).waitFor();
+  ok('cijena sa zarezom je ispravno sačuvana', (await page.locator('.rowitem', { hasText: 'Izbjeljivanje' }).innerText()).includes('250,50 KM'));
+  await shot(page, '20-cjenovnik');
+
+  await page.goto(kartonUrl);
+  await waitText(page, 'Nema planova terapije.');
+  await page.getByRole('button', { name: 'Novi plan' }).click();
+  await page.getByLabel('Naziv plana').fill('Sanacija zuba');
+  await page.getByRole('button', { name: 'Napravi plan' }).click();
+  await page.waitForURL(/\/plans\/[0-9a-f-]{36}$/);
+  const planUrl = page.url();
+  await waitText(page, 'Plan još nema stavki.');
+  ok('novi plan je nacrt bez stavki', (await page.getByRole('button', { name: 'Pošalji pacijentu' }).isDisabled()));
+  await page.getByRole('button', { name: 'Dodaj stavku' }).click();
+  await page.getByLabel('Iz cjenovnika').selectOption({ label: 'Kompozitni ispun · 80,00 KM' });
+  ok('izbor iz cjenovnika popunjava opis i cijenu', (await page.getByLabel('Opis').inputValue()) === 'Kompozitni ispun' && (await page.getByLabel('Cijena (KM)').inputValue()) === '80,00');
+  await page.getByLabel('Zub (FDI)').selectOption('36');
+  await page.getByRole('button', { name: 'Dodaj u plan' }).click();
+  await page.locator('.plan-item', { hasText: 'Kompozitni ispun' }).waitFor();
+  await page.getByRole('button', { name: 'Dodaj stavku' }).click();
+  await page.getByLabel('Iz cjenovnika').selectOption({ label: 'Kontrolni pregled · 30,00 KM' });
+  await page.getByLabel('Količina').fill('2');
+  await page.getByRole('button', { name: 'Dodaj u plan' }).click();
+  await page.locator('.plan-item', { hasText: 'Kontrolni pregled' }).waitFor();
+  ok('plan ima dvije stavke i ukupno 140 KM', (await page.locator('.plan-total').innerText()) === '140,00 KM');
+  await page.getByLabel('Popust (%)').fill('10');
+  await page.getByRole('button', { name: 'Sačuvaj detalje' }).click();
+  await waitText(page, 'Detalji su sačuvani.');
+  ok('popust od 10% se oduzima od ukupnog', (await page.locator('.plan-total').innerText()) === '126,00 KM' && (await has(page, '−14,00 KM')));
+  await page.getByRole('button', { name: 'Pošalji pacijentu' }).click();
+  await waitText(page, 'Plan je poslan.');
+  ok('poslan plan se više ne uređuje', (await page.getByRole('button', { name: 'Dodaj stavku' }).count()) === 0 && (await page.locator('.plan-head .tag').innerText()) === 'Poslan');
+  await shot(page, '21-plan');
+  await page.getByRole('link', { name: 'Ponuda za štampu / PDF' }).click();
+  await waitText(page, 'Ponuda i plan terapije');
+  await page.locator('.print-patient').waitFor();
+  const printOverflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  ok('ponuda stane na ekran telefona', printOverflow <= 0, `+${printOverflow}px`);
+  ok('ponuda za štampu ima pacijenta, stavke i ukupno', (await has(page, 'Amra Begić')) && (await has(page, 'Karton 1')) && (await page.locator('.print-total').innerText()).includes('126,00 KM') && (await page.locator('.shell').count()) === 0);
+  await shot(page, '22-ponuda');
+  await page.getByRole('link', { name: 'Nazad' }).click();
+  await page.waitForURL(planUrl);
+
+  console.log('== Pozivnica za pacijenta');
+  await page.goto(kartonUrl);
+  await waitText(page, 'Aplikacija za pacijenta');
+  await page.getByLabel('Email pacijenta').fill('amra@example.test');
+  await page.getByRole('button', { name: 'Napravi pozivnicu' }).click();
+  await waitText(page, 'Pozivnica za amra@example.test čeka');
+  ok('pozivnica ima QR kod za skeniranje', (await page.locator('.qr svg').count()) === 1);
+  const linkAmra = await page.getByLabel('Link pozivnice').inputValue();
+  ok('pozivnica iz kartona daje link', /\/invite\/[0-9a-f-]{36}$/.test(linkAmra), linkAmra);
+  await shot(page, '23-pozivnica-pacijenta');
+  await logout(page);
+
+  console.log('== Aplikacija za pacijente');
+  await page.goto(linkAmra);
+  await page.waitForURL('**/login');
+  await register(page, { name: 'Amra Begić', email: 'amra@example.test' });
+  await waitText(page, 'Zdravo, Amra');
+  ok('pacijent ulazi u svoju aplikaciju', (await page.locator('.papp-tabs a').count()) === 5 && (await page.locator('.shell').count()) === 0);
+  await page.locator('.appt-card-next', { hasText: 'Kompozitni ispun 36' }).waitFor();
+  ok('početna prikazuje sljedeći termin', (await page.locator('.appt-card-next').innerText()).includes('Dolazak potvrđen'));
+  ok('početna javlja da čeka plan terapije', await has(page, 'Doktor vam je poslao plan terapije'));
+  await shot(page, '24-pacijent-pocetna');
+  await page.goto(BASE + '/team');
+  await waitText(page, 'Zdravo, Amra');
+  ok('adrese osoblja vraćaju pacijenta na početnu', new URL(page.url()).pathname === '/');
+  const patSees = await page.evaluate(async () => {
+    const k = Object.keys(localStorage).find((x) => x.endsWith('-auth-token'));
+    const tok = JSON.parse(localStorage.getItem(k)).access_token;
+    const get = (p) => fetch('/rest/v1/' + p, { headers: { Authorization: 'Bearer ' + tok } }).then((r) => r.json());
+    const n = async (p) => (await get(p)).length;
+    return {
+      patients: await n('patients?select=id'), members: await n('clinic_members?select=id'), profiles: await n('profiles?select=id'),
+      invites: await n('clinic_invites?select=id'), medical: await n('patient_medical?select=patient_id'), entries: await n('patient_entries?select=id'),
+      teethTable: await n('tooth_status?select=tooth'), appts: await n('appointments?select=id'), plans: await n('treatment_plans?select=id'),
+    };
+  });
+  ok('baza pacijentu daje samo njegov karton i poslani plan', JSON.stringify(patSees) === JSON.stringify({ patients: 1, members: 1, profiles: 1, invites: 0, medical: 0, entries: 0, teethTable: 0, appts: 0, plans: 1 }), JSON.stringify(patSees));
+  await page.getByRole('link', { name: 'Pogledajte ponudu' }).click();
+  await page.waitForURL(/\/moj-karton#plan-/);
+  await page.getByRole('button', { name: /^Zub 36: Karijes D, Planirano O/ }).click();
+  await waitText(page, 'Karijes: distalno');
+  ok('pacijent vidi stanje svog zuba', (await page.getByRole('button', { name: /^Zub 46: Implantat/ }).count()) === 1);
+  const planCard = page.locator('.plan-card', { hasText: 'Sanacija zuba' });
+  ok('pacijent vidi ponudu s popustom', (await planCard.innerText()).includes('126,00 KM') && (await planCard.innerText()).includes('Čeka vaš odgovor'));
+  await planCard.getByRole('button', { name: 'Prihvatam plan' }).click();
+  await planCard.getByRole('button', { name: 'Da, prihvatam' }).click();
+  await planCard.getByText('Prihvaćen', { exact: true }).waitFor();
+  ok('pacijent prihvata plan u aplikaciji', (await planCard.getByRole('button', { name: 'Prihvatam plan' }).count()) === 0);
+  await shot(page, '25-pacijent-karton');
+  await page.locator('.papp-tabs').getByRole('link', { name: 'Termini' }).click();
+  await waitText(page, 'Kompozitni ispun 36');
+  ok('bez uključenog online zakazivanja nema dugmeta za zakazivanje', (await page.getByRole('link', { name: 'Zakaži termin' }).count()) === 0);
+  await page.goto(BASE + '/zakazi');
+  await waitText(page, 'Online zakazivanje trenutno nije uključeno.');
+  ok('stranica za zakazivanje kaže da je isključeno', true);
+  await page.locator('.papp-tabs').getByRole('link', { name: 'Novosti' }).click();
+  await waitText(page, 'Trenutno nema novosti.');
+  ok('prazne novosti su jasno označene', true);
+  await page.locator('.papp-tabs').getByRole('link', { name: 'Profil' }).click();
+  await logout(page);
+
+  console.log('== Vlasnik: radno vrijeme, slike, novosti, uplate');
+  await login(page, 'vlasnik@example.test');
+  await waitText(page, 'Dobar dan, Selma');
+  await navTo(page, 'Postavke');
+  await waitText(page, 'Radno vrijeme i online zakazivanje');
+  for (const day of ['subota', 'nedjelja']) await page.getByRole('checkbox', { name: day, exact: true }).check();
+  await page.getByLabel('Pacijenti mogu sami zakazati termin u aplikaciji').check();
+  await page.getByRole('button', { name: 'Sačuvaj radno vrijeme' }).click();
+  await waitText(page, 'Radno vrijeme je sačuvano.');
+  ok('radno vrijeme i online zakazivanje su sačuvani', true);
+  await page.getByLabel('Logo ordinacije').setInputFiles(PNG);
+  await page.locator('.shell-logo img').waitFor();
+  ok('logo se postavlja i odmah prikazuje u meniju', (await page.locator('.shell-logo img').getAttribute('src')).includes('/storage/v1/object/public/media/clinics/'));
+  await page.getByLabel('Slika profila').setInputFiles(PNG);
+  await page.locator('.upload-photo img.avatar').waitFor();
+  ok('slika doktora se postavlja', (await page.locator('.upload-photo img.avatar').getAttribute('src')).endsWith('.jpg'));
+  await shot(page, '26-postavke-slike');
+  await navTo(page, 'Pregled');
+  await page.locator('.doctors img.avatar').first().waitFor();
+  ok('pregled prikazuje doktore sa slikom', (await page.locator('.doctors').innerText()).includes('Selma Kovač'));
+
+  await navTo(page, 'Novosti i savjeti');
+  await waitText(page, 'Još nema novosti.');
+  await page.locator('.template-list a').first().click();
+  await page.getByRole('button', { name: 'Objavi' }).click();
+  await waitText(page, 'Prije objave popuni:');
+  ok('objava s nepopunjenim dijelovima je odbijena', await has(page, '[postotak]'));
+  await page.getByLabel('Naslov').fill('Dan žena: 20% popusta na izbjeljivanje');
+  await page.getByLabel('Tekst').fill('Od 1. do 8. marta nudimo 20% popusta na izbjeljivanje.\n\nTermin zakažite u aplikaciji.');
+  const inMonth = (() => { const d = new Date(Date.now() + 30 * 86400000); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; })();
+  await page.getByLabel('Prikazuj do').fill(inMonth);
+  await page.getByRole('button', { name: 'Objavi' }).click();
+  await waitText(page, 'Objavljeno. Pacijenti je vide u aplikaciji.');
+  ok('novost je objavljena', (await page.locator('.page-head .tag').innerText()) === 'Objavljeno');
+  await page.getByRole('link', { name: 'Nazad na novosti i savjete' }).click();
+  await page.getByRole('link', { name: 'Savjeti doktora' }).click();
+  await page.locator('.template-list a', { hasText: 'Nakon vađenja zuba' }).click();
+  await page.getByRole('button', { name: 'Sačuvaj kao nacrt' }).click();
+  await waitText(page, 'Nacrt je sačuvan. Pacijenti ga ne vide.');
+  await page.getByRole('button', { name: 'Objavi' }).click();
+  await waitText(page, 'Objavljeno.');
+  ok('savjet iz predloška je objavljen', true);
+  await shot(page, '27-savjet');
+
+  await page.goto(planUrl);
+  await waitText(page, 'prihvaćen');
+  ok('doktor vidi da je pacijent prihvatio u aplikaciji', await has(page, '(u aplikaciji)'));
+  await page.locator('.plan-item', { hasText: 'Kompozitni ispun' }).getByRole('checkbox').click();
+  await page.locator('.plan-item-done').waitFor();
+  ok('stavka je označena urađenom', (await has(page, 'Urađeno do sada')) && (await page.locator('.plan-totals').innerText()).includes('72,00 KM'));
+  await page.goto(kartonUrl);
+  await waitText(page, 'Uplate i stanje');
+  const finBlock = page.locator('section', { has: page.getByRole('heading', { name: 'Uplate i stanje' }) });
+  await finBlock.locator('.fin-owes', { hasText: '72,00 KM' }).waitFor();
+  ok('dug je urađeno s popustom (72 KM)', true);
+  await finBlock.getByRole('button', { name: 'Evidentiraj uplatu' }).click();
+  await finBlock.getByLabel('Iznos (KM)').fill('0');
+  await finBlock.getByRole('button', { name: 'Sačuvaj uplatu' }).click();
+  await waitText(page, 'Upiši iznos veći od nule');
+  await finBlock.getByLabel('Iznos (KM)').fill('50');
+  await finBlock.getByLabel('Za plan').selectOption({ index: 1 });
+  await finBlock.getByRole('button', { name: 'Sačuvaj uplatu' }).click();
+  await finBlock.locator('.fin-owes', { hasText: '22,00 KM' }).waitFor();
+  ok('nakon uplate od 50 KM dug je 22 KM', true);
+
+  await navTo(page, 'Finansije');
+  await waitText(page, 'Dugovanja');
+  await page.locator('.fin-big', { hasText: '50,00 KM' }).waitFor();
+  ok('finansije zbrajaju uplate ovog mjeseca', (await page.locator('.fin-methods').innerText()).includes('50,00 KM'));
+  const debtRow = page.locator('section', { has: page.getByRole('heading', { name: 'Dugovanja' }) }).locator('.rowitem', { hasText: 'Begić Amra' });
+  await debtRow.waitFor();
+  ok('dugovanja prikazuju pacijenta', (await debtRow.innerText()).includes('22,00 KM'));
+  await page.getByRole('button', { name: 'Evidentiraj uplatu' }).first().click();
+  await page.getByLabel('Pronađi pacijenta').fill('begic');
+  await page.locator('.picker-list button', { hasText: 'Begić Amra' }).click();
+  await page.getByLabel('Iznos (KM)').fill('10');
+  await page.getByLabel('Način plaćanja').selectOption('kartica');
+  await page.getByRole('button', { name: 'Sačuvaj uplatu' }).click();
+  await waitText(page, 'Uplata je evidentirana.');
+  await page.locator('.fin-big', { hasText: '60,00 KM' }).waitFor();
+  const tenRow = page.locator('.pay-row', { hasText: '10,00 KM' });
+  await tenRow.getByRole('button', { name: 'Storniraj' }).click();
+  await tenRow.getByRole('button', { name: 'Storniraj uplatu' }).click();
+  await waitText(page, 'Upiši razlog storniranja.');
+  await tenRow.getByLabel('Razlog storniranja').fill('Pogrešan pacijent');
+  await tenRow.getByRole('button', { name: 'Storniraj uplatu' }).click();
+  await waitText(page, 'Stornirano: Pogrešan pacijent');
+  await page.locator('.fin-big', { hasText: '50,00 KM' }).waitFor();
+  ok('stornirana uplata ostaje vidljiva, ali se ne računa', (await page.locator('.pay-void').count()) === 1);
+  await shot(page, '28-finansije');
+  await logout(page);
+
+  console.log('== Pacijent zakazuje online');
+  await login(page, 'amra@example.test');
+  await waitText(page, 'Zdravo, Amra');
+  await page.getByRole('link', { name: 'Zakaži još jedan termin' }).click();
+  await waitText(page, 'Šta vam treba?');
+  ok('za online su ponuđene samo usluge koje to dozvoljavaju', (await page.locator('.choice').count()) === 2 && !(await has(page, 'Izbjeljivanje')));
+  await page.getByRole('radio', { name: /Kontrolni pregled/ }).click();
+  await waitText(page, 'Koji dan?');
+  await page.locator('.day-chip').nth(2).click();
+  await page.locator('.slot').first().waitFor();
+  ok('slobodna vremena su u radnom vremenu (od 08:00, korak 30 min)', (await page.locator('.slot').first().innerText()) === '08:00' && (await page.locator('.slot').nth(1).innerText()) === '08:30');
+  await page.locator('.slot').nth(2).click();
+  await page.getByLabel('Napomena za doktora (neobavezno)').fill('Osjetljiv zub gore lijevo');
+  await shot(page, '29-pacijent-zakazivanje');
+  await page.getByRole('button', { name: 'Potvrdi termin' }).click();
+  await waitText(page, 'Termin je zakazan');
+  ok('potvrda prikazuje zakazano vrijeme', await has(page, '09:00'));
+  await page.getByRole('link', { name: 'Moji termini' }).click();
+  await page.locator('.appt-card').nth(1).waitFor();
+  ok('novi termin je među terminima', (await page.locator('.appt-card', { hasText: 'Kontrolni pregled' }).count()) === 1);
+  const newCard = page.locator('.appt-card', { hasText: 'Kontrolni pregled' });
+  await newCard.getByRole('button', { name: 'Potvrdi dolazak' }).click();
+  await newCard.getByText('Dolazak potvrđen').waitFor();
+  ok('pacijent potvrđuje dolazak', true);
+  await newCard.getByRole('button', { name: 'Otkaži termin' }).click();
+  await newCard.getByRole('button', { name: 'Da, otkaži' }).click();
+  await page.waitForFunction(() => document.querySelectorAll('.papp-stack .appt-card').length === 1);
+  ok('pacijent otkazuje termin više od 24 sata unaprijed', await has(page, 'Prethodni termini'));
+  await page.locator('.papp-tabs').getByRole('link', { name: 'Novosti' }).click();
+  await waitText(page, 'Dan žena: 20% popusta');
+  await page.getByRole('button', { name: 'Savjeti doktora' }).click();
+  await page.getByRole('link', { name: /Nakon vađenja zuba/ }).click();
+  await waitText(page, 'Prvih 24 sata ne ispirajte usta');
+  ok('pacijent čita savjet doktora', (await page.locator('.article p').count()) > 4);
+  await shot(page, '30-pacijent-savjet');
+  await page.locator('.papp-tabs').getByRole('link', { name: 'Moj karton' }).click();
+  await page.locator('.fin-owes', { hasText: '22,00 KM' }).waitFor();
+  ok('pacijent vidi koliko mu je preostalo za platiti', (await page.locator('.plan-lines', { hasText: '50,00 KM' }).count()) === 1);
+  await page.locator('.papp-tabs').getByRole('link', { name: 'Početna' }).click();
+  await page.locator('.doctors img.avatar').first().waitFor();
+  ok('pacijent vidi sliku doktora i logo ordinacije', (await page.locator('.papp-brand img').count()) === 1);
+  await page.locator('.papp-tabs').getByRole('link', { name: 'Profil' }).click();
+  await logout(page);
+
+  console.log('== Ordinacija vidi online termin');
+  await login(page, 'vlasnik@example.test');
+  await waitText(page, 'Pacijenti su sami zakazali');
+  ok('pregled prikazuje termin koji je pacijent sam zakazao', (await page.locator('.block-accent', { hasText: 'Pacijenti su sami zakazali' }).innerText()).includes('Kontrolni pregled'));
+  await logout(page);
+
   console.log('== Jezik, potvrda emaila, nova lozinka');
   await login(page, 'vlasnik@example.test');
   await waitText(page, 'Dobar dan, Selma');
-  await page.locator('.shell-nav').getByRole('link', { name: 'Postavke', exact: true }).click();
+  await navTo(page, 'Postavke');
   await page.getByLabel('Jezik').selectOption('en');
   await page.getByRole('button', { name: 'Sačuvaj profil' }).click();
   await waitText(page, 'Profile saved.');
@@ -477,12 +744,24 @@ const ok = (name, cond, extra = '') => { cond ? pass++ : fail++; console.log(`  
 
   console.log('== Izgled');
   const overflow = [];
-  for (const [p, who] of [['/login', null], ['/register', null], ['/', 'vlasnik@example.test'], ['/team', 'vlasnik@example.test'], ['/settings', 'vlasnik@example.test'], ['/patients', 'vlasnik@example.test'], ['/calendar', 'vlasnik@example.test'], [new URL(kartonUrl).pathname, 'vlasnik@example.test']]) {
+  for (const [p, who] of [['/login', null], ['/register', null], ['/', 'vlasnik@example.test'], ['/team', 'vlasnik@example.test'], ['/settings', 'vlasnik@example.test'], ['/patients', 'vlasnik@example.test'], ['/calendar', 'vlasnik@example.test'], [new URL(kartonUrl).pathname, 'vlasnik@example.test'], ['/services', 'vlasnik@example.test'], ['/finances', 'vlasnik@example.test'], ['/posts', 'vlasnik@example.test'], [new URL(planUrl).pathname, 'vlasnik@example.test']]) {
     if (who && !(await page.evaluate(() => Object.keys(localStorage).some((k) => k.endsWith('-auth-token'))))) { await login(page, who); await page.waitForURL((u) => new URL(u).pathname === '/'); await page.locator('.shell').waitFor(); }
     await page.goto(BASE + p);
     await page.waitForTimeout(500);
     const w = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     if (w > 0) overflow.push(`${p}: +${w}px`);
+  }
+  await page.goto(BASE + '/settings');
+  await page.getByRole('button', { name: /^(Odjavi se|Sign out)$/ }).first().click();
+  await page.waitForURL('**/login');
+  await page.locator('.lang-select').selectOption('bs');
+  await login(page, 'amra@example.test');
+  await page.locator('.papp').waitFor();
+  for (const p of ['/', '/termini', '/zakazi', '/moj-karton', '/novosti', '/profil']) {
+    await page.goto(BASE + p);
+    await page.waitForTimeout(500);
+    const w = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    if (w > 0) overflow.push(`pacijent ${p}: +${w}px`);
   }
   ok('nema vodoravnog pomjeranja na telefonu (390 px)', overflow.length === 0, overflow.join(', '));
 

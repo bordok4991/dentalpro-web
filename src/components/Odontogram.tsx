@@ -62,7 +62,9 @@ function layout(n: number) {
 
 const MARK_FILL: Record<SurfaceMark, string> = { karijes: '#E8590C', ispun: '#2A4E7A', plan: 'url(#dp-plan)' };
 
-function surfaceFill(st: ToothStatus | undefined, k: SurfaceKey): string {
+type ToothLook = Pick<ToothStatus, 'condition' | 'endo' | 'surfaces'>;
+
+function surfaceFill(st: ToothLook | undefined, k: SurfaceKey): string {
   if (!st) return '#FFFFFF';
   if (st.condition === 'nedostaje') return '#EEF2F6';
   const m = st.surfaces?.[k];
@@ -81,7 +83,7 @@ export function toothName(t: (k: Key, v?: Record<string, string | number>) => st
 
 /* ---------- Jedan zub ---------- */
 
-function ToothGlyph({ n, st }: { n: number; st?: ToothStatus }) {
+function ToothGlyph({ n, st }: { n: number; st?: ToothLook }) {
   const shape = shapeOf(n);
   const missing = st?.condition === 'nedostaje';
   const implant = st?.condition === 'implantat';
@@ -100,7 +102,7 @@ function ToothGlyph({ n, st }: { n: number; st?: ToothStatus }) {
   );
 }
 
-function Surfaces({ n, st }: { n: number; st?: ToothStatus }) {
+function Surfaces({ n, st }: { n: number; st?: ToothLook }) {
   const L = layout(n);
   return (
     <svg viewBox="0 0 30 30" className="tooth-surfaces" aria-hidden="true" opacity={st?.condition === 'nedostaje' ? 0.45 : 1}>
@@ -133,11 +135,14 @@ export function Odontogram({
   counts,
   selected,
   onSelect,
+  patientView,
 }: {
-  statuses: Map<number, ToothStatus>;
+  statuses: Map<number, ToothLook>;
   counts: Map<number, number>;
   selected: number | null;
   onSelect: (n: number) => void;
+  /** Pacijent: bez oznake zapisa u kartonu. */
+  patientView?: boolean;
 }) {
   const { t } = useI18n();
   const hasDeciduous = [...statuses.keys(), ...counts.keys()].some((n) => n >= 51);
@@ -233,7 +238,7 @@ export function Odontogram({
           <li><i style={{ background: '#E9C98F' }} />{t('teeth.legend.krunica')}</li>
           <li><i className="lg-endo" />{t('teeth.legend.endo')}</li>
           <li><i className="lg-missing" />{t('teeth.legend.nedostaje')}</li>
-          <li><i className="lg-count">2</i>{t('teeth.legend.entries')}</li>
+          {!patientView && <li><i className="lg-count">2</i>{t('teeth.legend.entries')}</li>}
         </ul>
         <button type="button" className="link-btn" aria-expanded={deciduous} onClick={() => setDeciduous((d) => !d)}>
           {deciduous ? t('karton.hideDeciduous') : t('karton.showDeciduous')}

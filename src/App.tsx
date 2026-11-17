@@ -14,6 +14,12 @@ import { Settings } from './pages/Settings';
 import { PatientNew, Patients } from './pages/Patients';
 import { Karton } from './pages/Karton';
 import { Calendar } from './pages/Calendar';
+import { Services } from './pages/Services';
+import { PlanEditor } from './pages/Plans';
+import { PlanPrint } from './pages/PlanPrint';
+import { Finances } from './pages/Finances';
+import { PostEditor, Posts } from './pages/Posts';
+import { PatientApp } from './patient/PatientApp';
 
 export function App() {
   const { session } = useSession();
@@ -69,17 +75,35 @@ function SignedIn() {
 
   const isStaff = current.role !== 'patient';
   return (
-    <Shell>
-      <Routes>
-        <Route path="/" element={<Overview />} />
-        {isStaff && <Route path="/calendar" element={<Calendar />} />}
-        {isStaff && <Route path="/team" element={<Team />} />}
-        {isStaff && <Route path="/patients" element={<Patients />} />}
-        {isStaff && <Route path="/patients/new" element={<PatientNew />} />}
-        {isStaff && <Route path="/patients/:id" element={<Karton />} />}
-        <Route path="/settings" element={<Settings />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </Shell>
+    <Routes>
+      {/* Ponuda za štampu: bez menija, i za osoblje i za pacijenta */}
+      <Route path="/plans/:planId/print" element={<PlanPrint />} />
+      <Route
+        path="*"
+        element={
+          isStaff ? (
+            <Shell>
+              <Routes>
+                <Route path="/" element={<Overview />} />
+                <Route path="/calendar" element={<Calendar />} />
+                <Route path="/team" element={<Team />} />
+                <Route path="/patients" element={<Patients />} />
+                <Route path="/patients/new" element={<PatientNew />} />
+                <Route path="/patients/:id" element={<Karton />} />
+                <Route path="/patients/:id/plans/:planId" element={<PlanEditor />} />
+                <Route path="/services" element={<Services />} />
+                <Route path="/finances" element={<Finances />} />
+                <Route path="/posts" element={<Posts />} />
+                <Route path="/posts/:id" element={<PostEditor />} />
+                <Route path="/settings" element={<Settings />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </Shell>
+          ) : (
+            <PatientApp />
+          )
+        }
+      />
+    </Routes>
   );
 }

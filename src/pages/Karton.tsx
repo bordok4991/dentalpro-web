@@ -5,8 +5,6 @@ import { errorKey } from '../lib/errors';
 import { api, useSession } from '../lib/session';
 import {
   CLINICAL_ROLES,
-  FDI_DECIDUOUS,
-  FDI_PERMANENT,
   type Appointment,
   type EntryInput,
   type MedicalInput,
@@ -15,9 +13,13 @@ import {
   type PatientMedical,
   type ToothStatus,
 } from '../lib/types';
-import { Button, Loading, Notice, SelectField, TextField } from '../components/ui';
+import { Button, Loading, Notice, TextField } from '../components/ui';
 import { PatientForm } from '../components/PatientForm';
 import { Odontogram, ToothEditor } from '../components/Odontogram';
+import { ToothSelect } from '../components/ToothSelect';
+import { PatientAccess } from '../components/PatientAccess';
+import { PlansBlock } from './Plans';
+import { PatientFinance } from './Finances';
 
 export function Karton() {
   const { id = '' } = useParams();
@@ -176,6 +178,9 @@ export function Karton() {
             </div>
           </section>
 
+          <PlansBlock patient={patient} />
+          <PatientFinance patient={patient} />
+
           <section className="block">
             <div className="block-head">
               <h2>{tooth == null ? t('karton.history') : t('karton.toothFilter', { n: tooth })}</h2>
@@ -230,7 +235,11 @@ export function Karton() {
           </section>
         </>
       ) : (
-        <Notice kind="info">{t('karton.clinicalOnly')}</Notice>
+        <>
+          <PlansBlock patient={patient} />
+          <PatientFinance patient={patient} />
+          <Notice kind="info">{t('karton.clinicalOnly')}</Notice>
+        </>
       )}
 
       <section className="block">
@@ -252,6 +261,8 @@ export function Karton() {
         />
       </section>
 
+      <PatientAccess patient={patient} onChange={setPatient} />
+
       <ArchiveBlock patient={patient} onChange={setPatient} />
     </>
   );
@@ -259,29 +270,6 @@ export function Karton() {
 
 function sortEntries(list: PatientEntry[]): PatientEntry[] {
   return [...list].sort((a, b) => (a.entry_date === b.entry_date ? b.created_at.localeCompare(a.created_at) : b.entry_date.localeCompare(a.entry_date)));
-}
-
-function ToothSelect({ value, onChange }: { value: number | null; onChange: (n: number | null) => void }) {
-  const { t } = useI18n();
-  return (
-    <SelectField label={t('entry.tooth')} value={value ?? ''} onChange={(e) => onChange(e.target.value ? Number(e.target.value) : null)}>
-      <option value="">{t('entry.noTooth')}</option>
-      <optgroup label={t('entry.permanent')}>
-        {FDI_PERMANENT.map((n) => (
-          <option key={n} value={n}>
-            {n}
-          </option>
-        ))}
-      </optgroup>
-      <optgroup label={t('entry.deciduous')}>
-        {FDI_DECIDUOUS.map((n) => (
-          <option key={n} value={n}>
-            {n}
-          </option>
-        ))}
-      </optgroup>
-    </SelectField>
-  );
 }
 
 function EntryForm({
