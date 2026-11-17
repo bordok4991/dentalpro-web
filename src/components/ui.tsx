@@ -1,4 +1,4 @@
-import { useId, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes } from 'react';
+import { useId, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react';
 import { useI18n } from '../lib/i18n';
 import { LOCALES, type Locale } from '../lib/types';
 
@@ -14,6 +14,27 @@ export function Field({ label, hint, id, ...rest }: FieldProps) {
     <div className="field">
       <label htmlFor={fid}>{label}</label>
       <input id={fid} aria-describedby={hint ? `${fid}-hint` : undefined} {...rest} />
+      {hint && (
+        <p className="hint" id={`${fid}-hint`}>
+          {hint}
+        </p>
+      )}
+    </div>
+  );
+}
+
+interface TextProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
+  label: string;
+  hint?: string;
+}
+
+export function TextField({ label, hint, id, rows = 3, ...rest }: TextProps) {
+  const auto = useId();
+  const fid = id ?? auto;
+  return (
+    <div className="field">
+      <label htmlFor={fid}>{label}</label>
+      <textarea id={fid} rows={rows} aria-describedby={hint ? `${fid}-hint` : undefined} {...rest} />
       {hint && (
         <p className="hint" id={`${fid}-hint`}>
           {hint}

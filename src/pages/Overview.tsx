@@ -34,7 +34,7 @@ export function StatusBanner({ clinic }: { clinic: Clinic }) {
 export function Overview() {
   const { t } = useI18n();
   const { profile, current } = useSession();
-  const [counts, setCounts] = useState<{ members: number; invites: number } | null>(null);
+  const [counts, setCounts] = useState<{ members: number; invites: number; patients: number } | null>(null);
 
   const clinicId = current?.clinic.id;
   const role = current?.role;
@@ -44,9 +44,9 @@ export function Overview() {
     if (!clinicId || !isStaff) return;
     let alive = true;
     setCounts(null);
-    Promise.all([api.members(clinicId), role === 'owner' ? api.invites(clinicId) : Promise.resolve([])])
-      .then(([m, i]) => {
-        if (alive) setCounts({ members: m.filter((x) => x.is_active).length, invites: i.length });
+    Promise.all([api.members(clinicId), role === 'owner' ? api.invites(clinicId) : Promise.resolve([]), api.patientCount(clinicId)])
+      .then(([m, i, p]) => {
+        if (alive) setCounts({ members: m.filter((x) => x.is_active).length, invites: i.length, patients: p });
       })
       .catch(() => {
         /* brojevi su pomoćni; pregled radi i bez njih */
@@ -116,6 +116,18 @@ export function Overview() {
           <p className="muted">{t('overview.noContact')}</p>
         )}
       </section>
+
+      {isStaff && (
+        <section className="block">
+          <div className="block-head">
+            <h2>{t('overview.patients')}</h2>
+            <Link className="text-link" to="/patients">
+              {t('overview.openPatients')}
+            </Link>
+          </div>
+          <p>{counts ? t('overview.patientCount', { n: counts.patients }) : t('common.loading')}</p>
+        </section>
+      )}
 
       {isStaff && (
         <section className="block">

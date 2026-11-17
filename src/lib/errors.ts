@@ -17,6 +17,13 @@ const MAP: [RegExp, Key][] = [
   [/clinics_name_check/i, 'err.clinicName'],
   [/_color_check/i, 'err.color'],
   [/clinic_invites_email_check/i, 'err.email'],
+  [/date_of_birth_check/i, 'err.dob'],
+  [/tooth_check/i, 'err.tooth'],
+  [/entry_date_check/i, 'err.entryDate'],
+  [/patient_entries_check/i, 'err.entryEmpty'],
+  [/patients_email_check/i, 'err.email'],
+  [/ne pripada ovoj ordinaciji/i, 'err.patientClinic'],
+  [/first_name_check|last_name_check/i, 'err.patientName'],
   [/NOT_ALLOWED|row-level security|permission denied/i, 'err.notAllowed'],
   [/Failed to fetch|NetworkError|Load failed/i, 'err.network'],
 ];

@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Clinic, Invite, Locale, Member, Membership, Profile, Role } from './types';
+import type { Clinic, EntryInput, Invite, Locale, MedicalInput, Member, Membership, Patient, PatientEntry, PatientInput, PatientMedical, Profile, Role } from './types';
 
 /**
  * Sve što aplikacija radi s bazom je ovdje, na jednom mjestu.
@@ -111,6 +111,116 @@ export function makeApi(sb: SupabaseClient) {
       if (!data || data.length === 0) throw new Error('NOT_ALLOWED');
     },
 
+    // ---------- Pacijenti ----------
+
+    /** Spisak pacijenata; pretraga po imenu, prezimenu, telefonu, emailu ili broju kartona. */
+    async patients(clinicId: string, opts: { query?: string; archived?: boolean; limit?: number } = {}): Promise<{ rows: Patient[]; more: boolean }> {
+      const limit = opts.limit ?? 100;
+      let q = sb
+        .from('patients')
+        .select(PATIENT_COLS)
+        .eq('clinic_id', clinicId)
+        .eq('is_archived', !!opts.archived)
+        .order('last_name', { ascending: true })
+        .order('first_name', { ascending: true })
+        .limit(limit + 1);
+      for (const term of searchTerms(opts.query ?? '')) {
+        q = /^\d+$/.test(term) ? q.or(`search_key.ilike.*${term}*,card_number.eq.${term}`) : q.ilike('search_key', `%${term}%`);
+      }
+      const { data, error } = await q;
+      if (error) throw error;
+      const rows = (data ?? []) as Patient[];
+      return { rows: rows.slice(0, limit), more: rows.length > limit };
+    },
+
+    async patientCount(clinicId: string): Promise<number> {
+      const { count, error } = await sb.from('patients').select('id', { count: 'exact', head: true }).eq('clinic_id', clinicId).eq('is_archived', false);
+      if (error) throw error;
+      return count ?? 0;
+    },
+
+    async patient(id: string): Promise<Patient | null> {
+      const { data, error } = await sb.from('patients').select(PATIENT_COLS).eq('id', id).maybeSingle();
+      if (error) throw error;
+      return data as Patient | null;
+    },
+
+    async createPatient(clinicId: string, input: PatientInput): Promise<Patient> {
+      const { data, error } = await sb
+        .from('patients')
+        .insert({ clinic_id: clinicId, ...cleanPatient(input) })
+        .select(PATIENT_COLS)
+        .single();
+      if (error) throw error;
+      return data as Patient;
+    },
+
+    async updatePatient(id: string, patch: Partial<PatientInput> & { is_archived?: boolean }): Promise<Patient> {
+      // Šalju se samo kolone koje korisnik smije mijenjati.
+      const body: Record<string, unknown> = 'first_name' in patch ? cleanPatient(patch as PatientInput) : {};
+      if (typeof patch.is_archived === 'boolean') body.is_archived = patch.is_archived;
+      const { data, error } = await sb.from('patients').update(body).eq('id', id).select(PATIENT_COLS);
+      if (error) throw error;
+      if (!data || data.length === 0) throw new Error('NOT_ALLOWED');
+      return data[0] as Patient;
+    },
+
+    async medical(patientId: string): Promise<PatientMedical | null> {
+      const { data, error } = await sb
+        .from('patient_medical')
+        .select('patient_id, clinic_id, allergies, medical_history, dental_history, notes, updated_at')
+        .eq('patient_id', patientId)
+        .maybeSingle();
+      if (error) throw error;
+      return data as PatientMedical | null;
+    },
+
+    async saveMedical(clinicId: string, patientId: string, input: MedicalInput): Promise<PatientMedical> {
+      const body = {
+        patient_id: patientId,
+        clinic_id: clinicId,
+        allergies: blank(input.allergies),
+        medical_history: blank(input.medical_history),
+        dental_history: blank(input.dental_history),
+        notes: blank(input.notes),
+      };
+      const { data, error } = await sb
+        .from('patient_medical')
+        .upsert(body, { onConflict: 'patient_id' })
+        .select('patient_id, clinic_id, allergies, medical_history, dental_history, notes, updated_at')
+        .single();
+      if (error) throw error;
+      return data as PatientMedical;
+    },
+
+    async entries(patientId: string): Promise<PatientEntry[]> {
+      const { data, error } = await sb
+        .from('patient_entries')
+        .select(ENTRY_COLS)
+        .eq('patient_id', patientId)
+        .order('entry_date', { ascending: false })
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as unknown as PatientEntry[];
+    },
+
+    async addEntry(clinicId: string, patientId: string, input: EntryInput): Promise<PatientEntry> {
+      const { data, error } = await sb
+        .from('patient_entries')
+        .insert({ clinic_id: clinicId, patient_id: patientId, ...cleanEntry(input) })
+        .select(ENTRY_COLS)
+        .single();
+      if (error) throw error;
+      return data as unknown as PatientEntry;
+    },
+
+    async updateEntry(id: string, input: EntryInput): Promise<PatientEntry> {
+      const { data, error } = await sb.from('patient_entries').update(cleanEntry(input)).eq('id', id).select(ENTRY_COLS);
+      if (error) throw error;
+      if (!data || data.length === 0) throw new Error('NOT_ALLOWED');
+      return data[0] as unknown as PatientEntry;
+    },
+
     /** Vraća id ordinacije kojoj se korisnik pridružio. */
     async acceptInvite(token: string): Promise<string> {
       const { data, error } = await sb.rpc('accept_invite', { p_token: token });
@@ -121,6 +231,47 @@ export function makeApi(sb: SupabaseClient) {
 }
 
 export type Api = ReturnType<typeof makeApi>;
+
+const PATIENT_COLS =
+  'id, clinic_id, card_number, first_name, last_name, date_of_birth, sex, phone, email, address, city, is_archived, created_at, updated_at';
+const ENTRY_COLS =
+  'id, clinic_id, patient_id, entry_date, tooth, diagnosis, treatment, note, author_id, created_at, updated_at, author:profiles!patient_entries_author_id_fkey(full_name)';
+
+function blank(v: string | null | undefined): string | null {
+  const t = (v ?? '').trim();
+  return t === '' ? null : t;
+}
+
+function cleanPatient(p: PatientInput) {
+  return {
+    first_name: p.first_name.trim(),
+    last_name: p.last_name.trim(),
+    date_of_birth: blank(p.date_of_birth),
+    sex: p.sex || null,
+    phone: blank(p.phone),
+    email: blank(p.email)?.toLowerCase() ?? null,
+    address: blank(p.address),
+    city: blank(p.city),
+  };
+}
+
+function cleanEntry(e: EntryInput) {
+  return { entry_date: e.entry_date, tooth: e.tooth ?? null, diagnosis: blank(e.diagnosis), treatment: blank(e.treatment), note: blank(e.note) };
+}
+
+/** Isto pravilo kao ključ pretrage u bazi: mala slova, bez kvačica. */
+export function normalizeSearch(s: string): string {
+  return s.toLowerCase().replace(/[čć]/g, 'c').replace(/š/g, 's').replace(/ž/g, 'z').replace(/đ/g, 'd');
+}
+
+/** Riječi pretrage, očišćene od znakova koji imaju posebno značenje u upitu. */
+export function searchTerms(q: string): string[] {
+  return normalizeSearch(q)
+    .replace(/[,()*%\\:"'.]/g, ' ')
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 5);
+}
 
 /** Iz zalijepljenog linka ili samog koda izvlači kod pozivnice. */
 export function parseInviteToken(input: string): string | null {

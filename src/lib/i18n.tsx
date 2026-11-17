@@ -131,6 +131,104 @@ const bs = {
   'settings.clinicSaved': 'Podaci ordinacije su sačuvani.',
   'settings.ownerOnly': 'Podatke ordinacije mijenja vlasnik.',
 
+  'nav.patients': 'Pacijenti',
+
+  'patients.title': 'Pacijenti',
+  'patients.lead': 'Kartoteka ordinacije.',
+  'patients.new': 'Novi pacijent',
+  'patients.search': 'Pretraga',
+  'patients.searchHint': 'Ime, prezime, telefon ili broj kartona. Kvačice nisu potrebne.',
+  'patients.showArchived': 'Prikaži arhivirane',
+  'patients.empty': 'Kartoteka je prazna. Dodaj prvog pacijenta.',
+  'patients.emptyArchived': 'Nema arhiviranih pacijenata.',
+  'patients.noResults': 'Nijedan pacijent ne odgovara pretrazi.',
+  'patients.card': 'Karton {n}',
+  'patients.archived': 'Arhiviran',
+  'patients.more': 'Prikazano je prvih {n}. Suzi pretragu da nađeš ostale.',
+
+  'patient.firstName': 'Ime',
+  'patient.lastName': 'Prezime',
+  'patient.dob': 'Datum rođenja',
+  'patient.sex': 'Spol',
+  'patient.sexF': 'Žensko',
+  'patient.sexM': 'Muško',
+  'patient.sexNone': 'Nije navedeno',
+  'patient.phone': 'Telefon',
+  'patient.email': 'Email',
+  'patient.address': 'Adresa',
+  'patient.city': 'Grad',
+  'patient.newTitle': 'Novi pacijent',
+  'patient.newLead': 'Broj kartona se dodjeljuje sam.',
+  'patient.create': 'Sačuvaj pacijenta',
+
+  'age.one': '{n} godina',
+  'age.few': '{n} godine',
+  'age.many': '{n} godina',
+
+  'karton.back': 'Svi pacijenti',
+  'karton.born': 'Rođenje: {date} ({age})',
+  'karton.allergies': 'Alergije',
+  'karton.personal': 'Lični podaci',
+  'karton.savePersonal': 'Sačuvaj lične podatke',
+  'karton.personalSaved': 'Lični podaci su sačuvani.',
+  'karton.medical': 'Medicinski podaci',
+  'karton.allergiesHint': 'Prikazuje se crveno na vrhu kartona.',
+  'karton.medicalHistory': 'Bolesti i terapija',
+  'karton.medicalHint': 'Hronične bolesti i lijekovi koje pacijent uzima.',
+  'karton.dentalHistory': 'Raniji stomatološki tretmani',
+  'karton.notes': 'Napomene',
+  'karton.saveMedical': 'Sačuvaj medicinske podatke',
+  'karton.medicalSaved': 'Medicinski podaci su sačuvani.',
+  'karton.history': 'Historija',
+  'karton.addEntry': 'Novi zapis',
+  'karton.noEntries': 'U kartonu još nema zapisa.',
+  'karton.clinicalOnly': 'Medicinske podatke i historiju vide vlasnik, doktori, specijalisti i asistenti.',
+  'karton.archive': 'Arhiviraj pacijenta',
+  'karton.confirmArchive': 'Potvrdi arhiviranje',
+  'karton.archiveNote': 'Arhiviran pacijent se ne prikazuje na spisku. Karton ostaje sačuvan i može se vratiti.',
+  'karton.unarchive': 'Vrati iz arhive',
+  'karton.archivedBanner': 'Pacijent je arhiviran.',
+  'karton.notFound': 'Pacijent nije pronađen ili nemaš pristup.',
+
+  'karton.teeth': 'Zubi',
+  'karton.teethHint': 'Označeni zubi imaju zapise. Klikni zub da vidiš samo njegovu historiju.',
+  'karton.showDeciduous': 'Prikaži mliječne zube',
+  'karton.hideDeciduous': 'Sakrij mliječne zube',
+  'karton.toothFilter': 'Zapisi za zub {n}',
+  'karton.showAll': 'Svi zapisi',
+  'karton.noToothEntries': 'Za zub {n} još nema zapisa.',
+  'karton.toothButton': 'Zub {n}, zapisa: {c}',
+  'karton.upper': 'Gornja vilica',
+  'karton.lower': 'Donja vilica',
+  'karton.medicalUpdated': 'Zadnja izmjena: {date}',
+  'entry.authorLabel': 'Autor: {name}',
+  'err.entryDate': 'Datum zapisa ne može biti u budućnosti.',
+  'entry.date': 'Datum',
+  'entry.tooth': 'Zub (FDI)',
+  'entry.noTooth': 'Bez zuba',
+  'entry.permanent': 'Stalni zubi',
+  'entry.deciduous': 'Mliječni zubi',
+  'entry.diagnosis': 'Dijagnoza',
+  'entry.treatment': 'Urađeno',
+  'entry.note': 'Napomena',
+  'entry.save': 'Sačuvaj zapis',
+  'entry.saveEdit': 'Sačuvaj ispravku',
+  'entry.edit': 'Ispravi',
+  'entry.toothLabel': 'Zub {n}',
+  'entry.author': 'Upisao: {name}',
+  'entry.edited': 'ispravljeno',
+  'entry.saved': 'Zapis je sačuvan.',
+
+  'overview.patients': 'Pacijenti',
+  'overview.patientCount': 'U kartoteci: {n}',
+  'overview.openPatients': 'Otvori kartoteku',
+
+  'err.dob': 'Datum rođenja ne može biti u budućnosti.',
+  'err.tooth': 'Zub mora biti FDI oznaka, npr. 16 ili 55.',
+  'err.entryEmpty': 'Upiši dijagnozu, urađeno ili napomenu.',
+  'err.patientClinic': 'Pacijent ne pripada ovoj ordinaciji.',
+  'err.patientName': 'Upiši ime i prezime.',
+
   'common.cancel': 'Odustani',
   'common.loading': 'Učitavam…',
   'common.retry': 'Pokušaj ponovo',
@@ -165,6 +263,32 @@ export type Key = keyof Dict;
 
 const hr: Dict = {
   ...bs,
+  'karton.teethHint': 'Označeni zubi imaju zapise. Klikni zub da vidiš samo njegovu povijest.',
+  'karton.medicalUpdated': 'Posljednja izmjena: {date}',
+  'karton.dentalHistory': 'Prijašnji stomatološki zahvati',
+  'patients.search': 'Pretraživanje',
+  'patients.noResults': 'Nijedan pacijent ne odgovara pretraživanju.',
+  'patients.more': 'Prikazano je prvih {n}. Suzi pretraživanje da pronađeš ostale.',
+  'patient.newLead': 'Broj kartona dodjeljuje se automatski.',
+  'patients.lead': 'Kartoteka ordinacije.',
+  'patients.searchHint': 'Ime, prezime, telefon ili broj kartona. Kvačice nisu potrebne.',
+  'patient.create': 'Spremi pacijenta',
+  'karton.personal': 'Osobni podaci',
+  'karton.savePersonal': 'Spremi osobne podatke',
+  'karton.personalSaved': 'Osobni podaci su spremljeni.',
+  'karton.medicalHint': 'Kronične bolesti i lijekovi koje pacijent uzima.',
+  'karton.saveMedical': 'Spremi medicinske podatke',
+  'karton.medicalSaved': 'Medicinski podaci su spremljeni.',
+  'karton.history': 'Povijest',
+  'karton.clinicalOnly': 'Medicinske podatke i povijest vide vlasnik, doktori, specijalisti i asistenti.',
+  'karton.archiveNote': 'Arhivirani pacijent se ne prikazuje na popisu. Karton ostaje spremljen i može se vratiti.',
+  'karton.notFound': 'Pacijent nije pronađen ili nemaš pristup.',
+  'entry.treatment': 'Učinjeno',
+  'entry.save': 'Spremi zapis',
+  'entry.saveEdit': 'Spremi ispravak',
+  'entry.edited': 'ispravljeno',
+  'entry.saved': 'Zapis je spremljen.',
+  'err.entryEmpty': 'Upiši dijagnozu, učinjeno ili napomenu.',
   'auth.register': 'Novi račun',
   'auth.submitRegister': 'Izradi račun',
   'auth.forgotLead': 'Upiši email računa. Poslat ćemo ti poveznicu za postavljanje nove lozinke.',
@@ -211,6 +335,20 @@ const hr: Dict = {
 
 const sr: Dict = {
   ...bs,
+  'karton.teethHint': 'Označeni zubi imaju zapise. Klikni zub da vidiš samo njegovu istoriju.',
+  'karton.showDeciduous': 'Prikaži mlečne zube',
+  'karton.hideDeciduous': 'Sakrij mlečne zube',
+  'karton.medicalUpdated': 'Poslednja izmena: {date}',
+  'patient.sex': 'Pol',
+  'patient.newLead': 'Broj kartona se dodeljuje automatski.',
+  'entry.edit': 'Ispravi',
+  'karton.history': 'Istorija',
+  'karton.medicalHint': 'Hronične bolesti i lekovi koje pacijent uzima.',
+  'karton.clinicalOnly': 'Medicinske podatke i istoriju vide vlasnik, doktori, specijalisti i asistenti.',
+  'karton.dentalHistory': 'Raniji stomatološki tretmani',
+  'karton.archiveNote': 'Arhiviran pacijent se ne prikazuje na spisku. Karton ostaje sačuvan i može da se vrati.',
+  'entry.deciduous': 'Mlečni zubi',
+  'patients.searchHint': 'Ime, prezime, telefon ili broj kartona. Kvačice nisu potrebne.',
   'auth.forgotLead': 'Upiši email naloga. Poslaćemo ti link za postavljanje nove lozinke.',
   'auth.resetSent': 'Ako nalog s tim emailom postoji, link je poslat. Proveri i neželjenu poštu.',
   'auth.passwordSaved': 'Lozinka je promenjena.',
@@ -364,6 +502,104 @@ const en: Dict = {
   'settings.clinicSaved': 'Practice details saved.',
   'settings.ownerOnly': 'Practice details are changed by the owner.',
 
+  'nav.patients': 'Patients',
+
+  'patients.title': 'Patients',
+  'patients.lead': 'The practice patient register.',
+  'patients.new': 'New patient',
+  'patients.search': 'Search',
+  'patients.searchHint': 'Name, surname, phone or record number.',
+  'patients.showArchived': 'Show archived',
+  'patients.empty': 'The register is empty. Add the first patient.',
+  'patients.emptyArchived': 'No archived patients.',
+  'patients.noResults': 'No patient matches the search.',
+  'patients.card': 'Record {n}',
+  'patients.archived': 'Archived',
+  'patients.more': 'Showing the first {n}. Narrow the search to find the rest.',
+
+  'patient.firstName': 'First name',
+  'patient.lastName': 'Last name',
+  'patient.dob': 'Date of birth',
+  'patient.sex': 'Sex',
+  'patient.sexF': 'Female',
+  'patient.sexM': 'Male',
+  'patient.sexNone': 'Not given',
+  'patient.phone': 'Phone',
+  'patient.email': 'Email',
+  'patient.address': 'Address',
+  'patient.city': 'City',
+  'patient.newTitle': 'New patient',
+  'patient.newLead': 'The record number is assigned automatically.',
+  'patient.create': 'Save patient',
+
+  'age.one': '{n} year',
+  'age.few': '{n} years',
+  'age.many': '{n} years',
+
+  'karton.back': 'All patients',
+  'karton.born': 'Born: {date} ({age})',
+  'karton.allergies': 'Allergies',
+  'karton.personal': 'Personal details',
+  'karton.savePersonal': 'Save personal details',
+  'karton.personalSaved': 'Personal details saved.',
+  'karton.medical': 'Medical details',
+  'karton.allergiesHint': 'Shown in red at the top of the record.',
+  'karton.medicalHistory': 'Conditions and medication',
+  'karton.medicalHint': 'Chronic conditions and medication the patient takes.',
+  'karton.dentalHistory': 'Previous dental treatment',
+  'karton.notes': 'Notes',
+  'karton.saveMedical': 'Save medical details',
+  'karton.medicalSaved': 'Medical details saved.',
+  'karton.history': 'History',
+  'karton.addEntry': 'New entry',
+  'karton.noEntries': 'There are no entries in this record yet.',
+  'karton.clinicalOnly': 'Medical details and history are visible to the owner, dentists, specialists and assistants.',
+  'karton.archive': 'Archive patient',
+  'karton.confirmArchive': 'Confirm archiving',
+  'karton.archiveNote': 'An archived patient is hidden from the list. The record is kept and can be restored.',
+  'karton.unarchive': 'Restore from archive',
+  'karton.archivedBanner': 'This patient is archived.',
+  'karton.notFound': 'Patient not found, or you do not have access.',
+
+  'karton.teeth': 'Teeth',
+  'karton.teethHint': 'Marked teeth have entries. Select a tooth to see only its history.',
+  'karton.showDeciduous': 'Show primary teeth',
+  'karton.hideDeciduous': 'Hide primary teeth',
+  'karton.toothFilter': 'Entries for tooth {n}',
+  'karton.showAll': 'All entries',
+  'karton.noToothEntries': 'Tooth {n} has no entries yet.',
+  'karton.toothButton': 'Tooth {n}, entries: {c}',
+  'karton.upper': 'Upper jaw',
+  'karton.lower': 'Lower jaw',
+  'karton.medicalUpdated': 'Last changed: {date}',
+  'entry.authorLabel': 'Author: {name}',
+  'err.entryDate': 'The entry date cannot be in the future.',
+  'entry.date': 'Date',
+  'entry.tooth': 'Tooth (FDI)',
+  'entry.noTooth': 'No tooth',
+  'entry.permanent': 'Permanent teeth',
+  'entry.deciduous': 'Primary teeth',
+  'entry.diagnosis': 'Diagnosis',
+  'entry.treatment': 'Treatment done',
+  'entry.note': 'Note',
+  'entry.save': 'Save entry',
+  'entry.saveEdit': 'Save correction',
+  'entry.edit': 'Correct',
+  'entry.toothLabel': 'Tooth {n}',
+  'entry.author': 'Entered by: {name}',
+  'entry.edited': 'corrected',
+  'entry.saved': 'Entry saved.',
+
+  'overview.patients': 'Patients',
+  'overview.patientCount': 'In the register: {n}',
+  'overview.openPatients': 'Open register',
+
+  'err.dob': 'The date of birth cannot be in the future.',
+  'err.tooth': 'The tooth must be an FDI number, e.g. 16 or 55.',
+  'err.entryEmpty': 'Enter a diagnosis, treatment or note.',
+  'err.patientClinic': 'This patient does not belong to this practice.',
+  'err.patientName': 'Enter the first and last name.',
+
   'common.cancel': 'Cancel',
   'common.loading': 'Loading…',
   'common.retry': 'Try again',
@@ -414,6 +650,7 @@ interface I18n {
   setLocale: (l: Locale) => void;
   t: (key: Key, vars?: Vars) => string;
   days: (n: number) => string;
+  age: (n: number) => string;
   date: (iso: string) => string;
 }
 
@@ -447,9 +684,17 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       setLocale,
       t,
       days: (n: number) => (n === 1 ? t('days.one') : t('days.many', { n })),
+      age: (n: number) => {
+        if (locale === 'en') return t(n === 1 ? 'age.one' : 'age.many', { n });
+        const a = n % 10, b = n % 100;
+        if (a === 1 && b !== 11) return t('age.one', { n });
+        if (a >= 2 && a <= 4 && (b < 12 || b > 14)) return t('age.few', { n });
+        return t('age.many', { n });
+      },
       // Ručno formatiranje: ne zavisi od toga podržava li preglednik bosanski.
       date: (iso: string) => {
-        const d = new Date(iso);
+        // Sam datum (YYYY-MM-DD) čita se po lokalnom vremenu, da ne pomjeri dan.
+        const d = new Date(/^\d{4}-\d{2}-\d{2}$/.test(iso) ? iso + 'T00:00:00' : iso);
         if (locale === 'en') {
           return `${d.getDate()} ${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getMonth()]} ${d.getFullYear()}`;
         }
@@ -470,4 +715,19 @@ export function useI18n(): I18n {
 /** Broj cijelih dana od sada do datuma (zaokruženo naviše, najmanje 0). */
 export function daysUntil(iso: string): number {
   return Math.max(0, Math.ceil((new Date(iso).getTime() - Date.now()) / 86_400_000));
+}
+
+/** Pune godine od datuma rođenja do danas. */
+export function ageFrom(dob: string): number {
+  const d = new Date(dob + 'T00:00:00');
+  const now = new Date();
+  let y = now.getFullYear() - d.getFullYear();
+  if (now.getMonth() < d.getMonth() || (now.getMonth() === d.getMonth() && now.getDate() < d.getDate())) y--;
+  return Math.max(0, y);
+}
+
+/** Današnji datum u obliku YYYY-MM-DD, po lokalnom vremenu. */
+export function todayIso(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }

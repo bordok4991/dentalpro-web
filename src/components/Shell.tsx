@@ -32,7 +32,12 @@ export function Shell({ children }: { children: ReactNode }) {
 
   const links = [
     { to: '/', label: t('nav.overview'), end: true },
-    ...(isStaff ? [{ to: '/team', label: t('nav.team'), end: false }] : []),
+    ...(isStaff
+      ? [
+          { to: '/patients', label: t('nav.patients'), end: false },
+          { to: '/team', label: t('nav.team'), end: false },
+        ]
+      : []),
     { to: '/settings', label: t('nav.settings'), end: false },
   ];
 

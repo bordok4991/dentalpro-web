@@ -1,5 +1,5 @@
 #!/bin/bash
-# Traži praznu bazu dp_test sa šemom: e2e/shim.sql, pa db/01-temelj.sql i db/02-profili.sql.
+# Traži praznu bazu dp_test sa šemom: e2e/shim.sql, pa redom svi fajlovi iz db/.
 # Test pravila pristupa. Pokreće se kao root; psql ide kroz korisnika postgres.
 DB=dp_test
 PASS=0; FAIL=0
@@ -78,6 +78,53 @@ eq "vlasnik vidi email i ime člana tima" "$(as $OA "select full_name || '/' || 
 eq "korisnik mijenja svoje ime i telefon" "$(as $P1 "update profiles set full_name='Novo Ime', phone='+38762111222' where id='$P1' returning 1" | grep -c '^1$')" "1"
 has "korisnik ne može obrisati profil" "$(as $P1 "delete from profiles where id='$P1'")" "permission denied"
 
+echo "== Karton pacijenta"
+PT1=$(as $DA "insert into patients (clinic_id,first_name,last_name,date_of_birth,phone) values ('$CA','Ana','Anić','1990-05-01','061111222') returning id" | sed -n 3p)
+PT2=$(as $RA "insert into patients (clinic_id,first_name,last_name) values ('$CA','Bego','Begić') returning id" | sed -n 3p)
+PTB=$(as $OB "insert into patients (clinic_id,first_name,last_name) values ('$CB','Cvijeta','Cvijić') returning id" | sed -n 3p)
+eq "brojevi kartona idu redom po ordinaciji" "$(admin "select string_agg(card_number::text, ',' order by card_number) from patients where clinic_id='$CA'")" "1,2"
+eq "druga ordinacija ima svoj brojač" "$(admin "select card_number from patients where id='$PTB'")" "1"
+eq "pretraga bez kvačica nalazi Begića" "$(as $RA "select last_name from patients where search_key like '%begic%'" | tail -1)" "Begić"
+eq "recepcija vidi pacijente svoje ordinacije" "$(as $RA "select count(*) from patients" | tail -1)" "2"
+eq "vlasnik B vidi samo svoje pacijente" "$(as $OB "select count(*) from patients" | tail -1)" "1"
+eq "pacijent ne vidi kartone" "$(as $P1 "select count(*) from patients" | tail -1)" "0"
+eq "stranac ne vidi kartone" "$(as $OUT "select count(*) from patients" | tail -1)" "0"
+eq "Super Admin ne vidi podatke pacijenata" "$(as $ADMIN "select count(*) from patients" | tail -1)" "0"
+has "anonimni nema pristup kartonima" "$(as anon "select count(*) from patients")" "permission denied"
+has "pacijent ne može dodati karton" "$(as $P1 "insert into patients (clinic_id,first_name,last_name) values ('$CA','X','Y')")" "row-level security"
+has "vlasnik B ne može dodati pacijenta u ordinaciju A" "$(as $OB "insert into patients (clinic_id,first_name,last_name) values ('$CA','X','Y')")" "row-level security"
+has "datum rođenja u budućnosti je odbijen" "$(as $DA "insert into patients (clinic_id,first_name,last_name,date_of_birth) values ('$CA','X','Y', current_date + 3)")" "violates check"
+has "broj kartona se ne može promijeniti" "$(as $DA "update patients set card_number=99 where id='$PT1'")" "ne mogu mijenjati"
+has "pacijent se ne može prebaciti u drugu ordinaciju" "$(as $OA "update patients set clinic_id='$CB' where id='$PT1'")" "ne mogu mijenjati\|row-level security"
+has "pacijent se ne može obrisati" "$(as $OA "delete from patients where id='$PT2'")" "permission denied"
+eq "recepcija mijenja kontakt pacijenta" "$(as $RA "update patients set phone='062333444' where id='$PT2' returning 1" | grep -c '^1$')" "1"
+eq "pacijent se arhivira umjesto brisanja" "$(as $DA "update patients set is_archived=true where id='$PT2' returning 1" | grep -c '^1$')" "1"
+
+eq "doktor upisuje alergije" "$(as $DA "insert into patient_medical (patient_id,clinic_id,allergies) values ('$PT1','$CA','Penicilin') returning 1" | grep -c '^1$')" "1"
+eq "doktor čita medicinske podatke" "$(as $DA "select allergies from patient_medical where patient_id='$PT1'" | tail -1)" "Penicilin"
+eq "recepcija ne vidi medicinske podatke" "$(as $RA "select count(*) from patient_medical" | tail -1)" "0"
+has "recepcija ne može upisati medicinske podatke" "$(as $RA "insert into patient_medical (patient_id,clinic_id,notes) values ('$PT2','$CA','x')")" "row-level security"
+eq "izmjena medicinskih podataka bilježi autora" "$(as $OA "update patient_medical set notes='Dijabetes' where patient_id='$PT1' returning updated_by" | sed -n 3p)" "$OA"
+has "medicinski podaci se ne mogu vezati za tuđeg pacijenta" "$(as $OB "insert into patient_medical (patient_id,clinic_id,notes) values ('$PT1','$CB','x')")" "ne pripada"
+
+E1=$(as $DA "insert into patient_entries (clinic_id,patient_id,tooth,diagnosis,treatment) values ('$CA','$PT1',16,'Karijes','Kompozitni ispun') returning id" | sed -n 3p)
+eq "doktor upisuje zapis za zub 16" "$(admin "select tooth || '/' || author_id from patient_entries where id='$E1'")" "16/$DA"
+eq "mliječni zub 55 je ispravna oznaka" "$(as $DA "insert into patient_entries (clinic_id,patient_id,tooth,note) values ('$CA','$PT1',55,'Kontrola') returning 1" | grep -c '^1$')" "1"
+has "zub 19 nije FDI oznaka" "$(as $DA "insert into patient_entries (clinic_id,patient_id,tooth,note) values ('$CA','$PT1',19,'x')")" "violates check"
+has "zub 59 nije FDI oznaka" "$(as $DA "insert into patient_entries (clinic_id,patient_id,tooth,note) values ('$CA','$PT1',59,'x')")" "violates check"
+has "prazan zapis je odbijen" "$(as $DA "insert into patient_entries (clinic_id,patient_id,diagnosis) values ('$CA','$PT1','   ')")" "violates check"
+has "zapis se ne može upisati u tuđe ime" "$(as $DA "insert into patient_entries (clinic_id,patient_id,note,author_id) values ('$CA','$PT1','x','$OA')")" "row-level security"
+eq "recepcija ne vidi zapise" "$(as $RA "select count(*) from patient_entries" | tail -1)" "0"
+has "recepcija ne može upisati zapis" "$(as $RA "insert into patient_entries (clinic_id,patient_id,note) values ('$CA','$PT1','x')")" "row-level security"
+eq "autor ispravlja svoj zapis" "$(as $DA "update patient_entries set treatment='Kompozitni ispun, klasa II' where id='$E1' returning 1" | grep -c '^1$')" "1"
+eq "vlasnik ispravlja tuđi zapis" "$(as $OA "update patient_entries set note='Pregledano' where id='$E1' returning 1" | grep -c '^1$')" "1"
+has "autor zapisa se ne može promijeniti" "$(as $OA "update patient_entries set author_id='$OA' where id='$E1'")" "ne može mijenjati"
+has "zapis se ne može obrisati" "$(as $OA "delete from patient_entries where id='$E1'")" "permission denied"
+has "zapis se ne može premjestiti na drugog pacijenta" "$(as $OA "update patient_entries set patient_id='$PT2' where id='$E1'")" "premjestiti"
+has "brojač kartona nije dostupan iz aplikacije" "$(as $OA "select * from clinic_counters")" "permission denied"
+eq "izmjene kartona su u audit logu" "$(admin "select count(distinct table_name) from audit_log where table_name in ('patients','patient_medical','patient_entries') and clinic_id='$CA'")" "3"
+eq "audit bilježi id pacijenta za medicinske podatke" "$(admin "select count(*) from audit_log where table_name='patient_medical' and row_id='$PT1'")" "2"
+
 echo "== Zaštite"
 has "vlasnik ne može ručno učlaniti tuđi nalog" "$(as $OA "insert into clinic_members (clinic_id,user_id,role) values ('$CA','$OUT','patient')")" "row-level security"
 has "članstvo se ne može preseliti na drugog korisnika" "$(as $OA "update clinic_members set user_id='$OUT' where user_id='$P2'")" "ne mogu mijenjati"
@@ -91,6 +138,7 @@ has "jedini vlasnik ne može sebe ukloniti" "$(as $OA "delete from clinic_member
 eq "vlasnik deaktivira člana" "$(as $OA "update clinic_members set is_active=false where user_id='$RA' returning 1" | grep -c '^1$')" "1"
 eq "deaktivirana recepcija više ne vidi ordinaciju" "$(as $RA "select count(*) from clinics" | tail -1)" "0"
 eq "vlasnik i dalje vidi profil deaktiviranog člana" "$(as $OA "select count(*) from profiles where id='$RA'" | tail -1)" "1"
+eq "deaktivirana recepcija više ne vidi kartone" "$(as $RA "select count(*) from patients" | tail -1)" "0"
 eq "deaktivirana recepcija više ne vidi pacijente" "$(as $RA "select count(*) from profiles where id in ('$P1','$P2')" | tail -1)" "0"
 has "nalog koji je član se ne može obrisati" "$(admin "delete from auth.users where id='$DA'")" "violates foreign key"
 

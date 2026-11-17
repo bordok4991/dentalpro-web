@@ -128,6 +128,7 @@ a {
 
 input,
 select,
+textarea,
 button {
   font: inherit;
   color: inherit;
@@ -135,6 +136,7 @@ button {
 
 .field input,
 .field select,
+.field textarea,
 .copy input,
 .lang-select,
 .shell-clinic select {
@@ -146,8 +148,15 @@ button {
   background: var(--surface);
 }
 
+.field textarea {
+  min-height: 0;
+  resize: vertical;
+  line-height: 1.45;
+}
+
 .field input:hover,
-.field select:hover {
+.field select:hover,
+.field textarea:hover {
   border-color: #b9c6d4;
 }
 
@@ -678,10 +687,274 @@ button {
   cursor: pointer;
 }
 
+/* ---------- Pacijenti ---------- */
+.form-grid,
+.entry-form {
+  display: grid;
+  gap: 14px;
+}
+
+.search-row {
+  display: grid;
+  gap: 8px;
+}
+
+.check {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  font-size: 0.9375rem;
+  cursor: pointer;
+}
+
+.check input {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  accent-color: var(--brand);
+}
+
+.patient-rows li + li {
+  border-top: 1px solid var(--line);
+}
+
+.patient-link {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 16px;
+  margin: 0 -10px;
+  padding: 12px 10px;
+  border-radius: var(--radius);
+  color: inherit;
+  text-decoration: none;
+}
+
+.patient-link:hover {
+  background: var(--page);
+}
+
+.patient-name {
+  flex: 1 0 100%;
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+
+.karton-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 20px;
+  padding: 0;
+  list-style: none;
+  color: var(--muted);
+}
+
+.allergy {
+  display: grid;
+  gap: 2px;
+  margin-top: 16px;
+  padding: 14px 16px;
+  background: var(--danger-bg);
+  border: 1px solid #f3c5bf;
+  border-left: 4px solid var(--danger);
+  border-radius: var(--radius);
+  color: #7a1a12;
+}
+
+.allergy p {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* Zubna šema u kartonu */
+.toothmap {
+  display: grid;
+  gap: 12px;
+}
+
+.jaw {
+  display: grid;
+  gap: 6px;
+}
+
+.jaw + .jaw {
+  padding-top: 12px;
+  border-top: 1px dashed #b9c6d4;
+}
+
+.toothmap-deciduous {
+  display: grid;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.quad {
+  display: grid;
+  grid-template-columns: repeat(var(--n), minmax(0, 1fr));
+  gap: 4px;
+}
+
+.tooth {
+  position: relative;
+  min-height: 44px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.tooth:hover {
+  border-color: #9fb1c4;
+}
+
+.tooth-has {
+  background: var(--ok-bg);
+  border-color: #8fd9cf;
+  color: var(--teal-ink);
+}
+
+.tooth[aria-pressed='true'] {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: var(--brand-ink);
+}
+
+.tooth-count {
+  position: absolute;
+  top: -7px;
+  right: -5px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--teal-ink);
+  color: #fff;
+  font-size: 0.6875rem;
+  line-height: 18px;
+}
+
+/* Historija */
+.entries {
+  display: grid;
+  padding: 0;
+  list-style: none;
+}
+
+.entry {
+  display: grid;
+  gap: 6px;
+  padding: 16px 0;
+  border-top: 1px solid var(--line);
+}
+
+.entry:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.entry:last-child {
+  padding-bottom: 0;
+}
+
+.entry-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+}
+
+.entry-head time {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.entry-head .tag {
+  margin-left: 0;
+  vertical-align: baseline;
+}
+
+.tag-tooth {
+  border: 0;
+  background: var(--ok-bg);
+  color: var(--teal-ink);
+  cursor: pointer;
+}
+
+.tag-tooth:hover {
+  text-decoration: underline;
+}
+
+.entry-edit {
+  margin-left: auto;
+  padding: 4px 0;
+}
+
+.entry-body {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 14px;
+}
+
+.entry-body dt {
+  color: var(--muted);
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+.entry-body dd {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.entry-form {
+  padding: 14px;
+  background: var(--page);
+  border-radius: var(--radius);
+}
+
+.entry-editing .entry-form {
+  margin: 0;
+}
+
 /* ---------- Širi ekrani ---------- */
 @media (min-width: 640px) {
   .grid-2 {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .search-row {
+    grid-template-columns: 1fr auto;
+    align-items: start;
+    column-gap: 20px;
+  }
+
+  .search-row .check {
+    margin-top: 27px;
+  }
+
+  .patient-name {
+    flex: 1 1 14rem;
+  }
+
+  .jaw {
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+  }
+
+  .jaw .quad:first-child {
+    padding-right: 8px;
+    border-right: 2px solid #b9c6d4;
+  }
+
+  .jaw .quad + .quad {
+    padding-left: 8px;
   }
 
   .page-head-row {

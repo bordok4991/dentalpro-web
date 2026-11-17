@@ -11,6 +11,8 @@ import { InviteAccept } from './pages/InviteAccept';
 import { Overview } from './pages/Overview';
 import { Team } from './pages/Team';
 import { Settings } from './pages/Settings';
+import { PatientNew, Patients } from './pages/Patients';
+import { Karton } from './pages/Karton';
 
 export function App() {
   const { session } = useSession();
@@ -70,6 +72,9 @@ function SignedIn() {
       <Routes>
         <Route path="/" element={<Overview />} />
         {isStaff && <Route path="/team" element={<Team />} />}
+        {isStaff && <Route path="/patients" element={<Patients />} />}
+        {isStaff && <Route path="/patients/new" element={<PatientNew />} />}
+        {isStaff && <Route path="/patients/:id" element={<Karton />} />}
         <Route path="/settings" element={<Settings />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
