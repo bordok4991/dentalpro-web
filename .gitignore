@@ -1,0 +1,8 @@
+node_modules
+dist
+.env.e2e.local
+e2e/.dist
+e2e/.*.log
+e2e/shots
+e2e/node_modules
+.netlify

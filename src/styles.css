@@ -1,0 +1,797 @@
+:root {
+  --navy: #0f2a47;
+  --navy-deep: #0a1e33;
+  --teal: #14b8a6;
+  --teal-ink: #0b6b62;
+  --page: #f2f6fa;
+  --surface: #ffffff;
+  --ink: #10243a;
+  --muted: #55677b;
+  --line: #d9e2eb;
+  --danger: #b42318;
+  --danger-bg: #fdf0ee;
+  --warn: #8a4b0b;
+  --warn-bg: #fdf4e3;
+  --ok-bg: #e7f7f4;
+
+  /* Boje ordinacije; ljuska ih zamijeni vrijednostima iz baze. */
+  --brand: var(--navy);
+  --brand-ink: #ffffff;
+  --accent: var(--teal);
+
+  --radius: 10px;
+  --radius-lg: 14px;
+  --font: 'Albert Sans Variable', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font);
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--ink);
+  background: var(--page);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+p,
+ul,
+dl,
+dd,
+figure {
+  margin: 0;
+}
+
+h1 {
+  font-size: 1.75rem;
+  line-height: 1.15;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+h2 {
+  font-size: 1.0625rem;
+  line-height: 1.3;
+  font-weight: 650;
+}
+
+a {
+  color: var(--teal-ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--teal);
+  outline-offset: 2px;
+}
+
+.lead {
+  color: var(--muted);
+  max-width: 60ch;
+}
+
+.muted,
+.hint,
+.meta {
+  color: var(--muted);
+}
+
+.hint,
+.meta {
+  font-size: 0.875rem;
+}
+
+.plain {
+  list-style: none;
+  padding: 0;
+}
+
+/* ---------- Znak ---------- */
+.wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  font-size: 1.125rem;
+  letter-spacing: -0.01em;
+}
+
+.wordmark-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+/* ---------- Polja i dugmad ---------- */
+.field {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.field label {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+input,
+select,
+button {
+  font: inherit;
+  color: inherit;
+}
+
+.field input,
+.field select,
+.copy input,
+.lang-select,
+.shell-clinic select {
+  width: 100%;
+  min-height: 46px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.field input:hover,
+.field select:hover {
+  border-color: #b9c6d4;
+}
+
+.field input[readonly] {
+  background: var(--page);
+  color: var(--muted);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
+  padding: 10px 18px;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn-primary {
+  background: var(--brand);
+  color: var(--brand-ink);
+}
+
+.btn-primary:hover {
+  filter: brightness(1.12);
+}
+
+.btn-quiet {
+  background: var(--surface);
+  border-color: var(--line);
+  color: var(--ink);
+}
+
+.btn-quiet:hover {
+  border-color: #b9c6d4;
+}
+
+.btn-danger {
+  background: var(--danger);
+  color: #fff;
+}
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.link-btn {
+  justify-self: start;
+  padding: 8px 0;
+  text-align: left;
+  border: 0;
+  background: none;
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.text-link {
+  font-weight: 600;
+  text-underline-offset: 3px;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.grid-2 {
+  display: grid;
+  gap: 14px;
+}
+
+.notice {
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  border-left: 4px solid;
+  font-size: 0.9375rem;
+}
+
+.notice-error {
+  background: var(--danger-bg);
+  border-color: var(--danger);
+  color: #7a1a12;
+}
+
+.notice-ok {
+  background: var(--ok-bg);
+  border-color: var(--teal);
+  color: #0a4f49;
+}
+
+.notice-info {
+  background: #eaf1f8;
+  border-color: var(--navy);
+}
+
+.loading {
+  color: var(--muted);
+}
+
+.splash {
+  min-height: 100dvh;
+  display: grid;
+  place-content: center;
+  gap: 16px;
+  padding: 24px;
+  justify-items: center;
+}
+
+.tag {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: #e6edf4;
+  font-size: 0.75rem;
+  font-weight: 600;
+  vertical-align: 2px;
+}
+
+.tag-warn {
+  background: var(--warn-bg);
+  color: var(--warn);
+}
+
+/* ---------- Prijava ---------- */
+.auth {
+  min-height: 100dvh;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  background: var(--surface);
+}
+
+.auth-brand {
+  display: grid;
+  gap: 6px;
+  padding: 22px 20px 18px;
+  background: var(--navy);
+  color: #fff;
+}
+
+.auth-tagline {
+  color: #b9c9da;
+}
+
+.fdi {
+  margin-top: 10px;
+}
+
+.fdi svg {
+  display: block;
+  width: 100%;
+  max-width: 460px;
+  height: auto;
+}
+
+.fdi figcaption {
+  margin-top: 6px;
+  font-size: 0.8125rem;
+  color: #9fb3c8;
+}
+
+.fdi-tooth {
+  fill: rgba(255, 255, 255, 0.09);
+  stroke: rgba(255, 255, 255, 0.6);
+  stroke-width: 1.25;
+}
+
+.fdi-num {
+  fill: rgba(255, 255, 255, 0.72);
+  font-family: var(--font);
+  font-size: 9.5px;
+  font-weight: 500;
+}
+
+.fdi-axis {
+  stroke: var(--teal);
+  stroke-opacity: 0.55;
+  stroke-width: 1;
+  stroke-dasharray: 3 4;
+}
+
+.auth-main {
+  padding: 16px 20px 40px;
+  width: 100%;
+  max-width: 460px;
+  justify-self: center;
+}
+
+.auth-lang {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+}
+
+.lang-select {
+  width: auto;
+  min-height: 38px;
+  padding: 6px 10px;
+  font-size: 0.875rem;
+}
+
+.auth-form {
+  display: grid;
+  gap: 16px;
+}
+
+.tabs {
+  display: flex;
+  gap: 24px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 4px;
+}
+
+.tabs a {
+  padding: 10px 0 12px;
+  margin-bottom: -1px;
+  border-bottom: 3px solid transparent;
+  color: var(--muted);
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+}
+
+.tabs a[aria-current='page'] {
+  color: var(--ink);
+  border-bottom-color: var(--teal);
+}
+
+/* ---------- Samostalne stranice (dobrodošlica, pozivnica, lozinka) ---------- */
+.solo {
+  min-height: 100dvh;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 24px 20px 48px;
+  display: grid;
+  gap: 20px;
+  align-content: start;
+}
+
+.solo-wide {
+  max-width: 920px;
+}
+
+.solo-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.panel {
+  display: grid;
+  gap: 16px;
+  padding: 22px 20px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+}
+
+.panel-plain {
+  background: none;
+  border-style: dashed;
+  align-content: start;
+}
+
+.split {
+  display: grid;
+  gap: 16px;
+}
+
+/* ---------- Ljuska aplikacije ---------- */
+.shell {
+  min-height: 100dvh;
+}
+
+.shell-side {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 2px 12px;
+  padding: 12px 20px;
+  background: var(--brand);
+  color: var(--brand-ink);
+}
+
+.shell-clinic {
+  grid-column: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 0.875rem;
+  min-width: 0;
+}
+
+.shell-clinic span {
+  opacity: 0.75;
+}
+
+.shell-clinic select {
+  width: auto;
+  max-width: 100%;
+  min-height: 34px;
+  padding: 4px 8px;
+  color: var(--ink);
+  font-size: 0.875rem;
+}
+
+.shell-foot {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  font-size: 0.875rem;
+}
+
+.shell-user {
+  display: none;
+}
+
+.shell-nav {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 6;
+  display: flex;
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.shell-nav a {
+  flex: 1;
+  padding: 14px 8px 12px;
+  border-top: 3px solid transparent;
+  color: var(--muted);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  text-align: center;
+  text-decoration: none;
+}
+
+.shell-nav a.active {
+  color: var(--ink);
+  border-top-color: var(--accent);
+}
+
+.shell-main {
+  max-width: 860px;
+  padding: 24px 20px 96px;
+}
+
+.page-head {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 20px;
+}
+
+.page-head-row {
+  gap: 14px;
+}
+
+.page-head-row .btn {
+  justify-self: start;
+}
+
+/* ---------- Sadržaj ---------- */
+.block {
+  display: grid;
+  gap: 14px;
+  padding: 20px;
+  margin-top: 16px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+}
+
+.block > .btn {
+  justify-self: start;
+}
+
+.block-accent {
+  border-left: 4px solid var(--accent);
+}
+
+.block-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.clinic-name {
+  font-size: 1.375rem;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  line-height: 1.2;
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 6px 16px;
+}
+
+.facts dt {
+  color: var(--muted);
+}
+
+.facts dd {
+  overflow-wrap: anywhere;
+}
+
+.status {
+  display: grid;
+  gap: 2px;
+  padding: 14px 16px;
+  border-radius: var(--radius);
+  border-left: 4px solid;
+}
+
+.status-trial {
+  background: var(--ok-bg);
+  border-color: var(--teal);
+}
+
+.status-active {
+  background: #eaf1f8;
+  border-color: var(--navy);
+}
+
+.status-suspended {
+  background: var(--warn-bg);
+  border-color: var(--warn);
+}
+
+.rows {
+  list-style: none;
+  padding: 0;
+}
+
+.rowitem {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: start;
+  gap: 12px;
+  padding: 14px 0;
+  border-top: 1px solid var(--line);
+}
+
+.rowitem .copy,
+.rowitem-edit {
+  grid-column: 1 / -1;
+}
+
+.rowitem-actions .btn {
+  min-height: 40px;
+  padding: 6px 14px;
+}
+
+.rowitem:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.rowitem:last-child {
+  padding-bottom: 0;
+}
+
+.rowitem-main {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.rowitem-main strong,
+.rowitem-main .meta {
+  overflow-wrap: anywhere;
+}
+
+.rowitem-off .rowitem-main {
+  opacity: 0.6;
+}
+
+.rowitem-edit {
+  display: grid;
+  gap: 14px;
+  padding: 14px;
+  background: var(--page);
+  border-radius: var(--radius);
+}
+
+.copy {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  min-width: 0;
+}
+
+.copy input {
+  min-width: 0;
+  font-size: 0.875rem;
+  color: var(--muted);
+  text-overflow: ellipsis;
+}
+
+.color {
+  display: grid;
+  grid-template-columns: 46px 1fr;
+  gap: 8px;
+}
+
+.color input[type='color'] {
+  padding: 4px;
+  min-height: 46px;
+  cursor: pointer;
+}
+
+/* ---------- Širi ekrani ---------- */
+@media (min-width: 640px) {
+  .grid-2 {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .page-head-row {
+    grid-template-columns: 1fr auto;
+    align-items: end;
+  }
+
+  .rowitem {
+    align-items: center;
+  }
+
+  .split {
+    grid-template-columns: 3fr 2fr;
+    align-items: start;
+  }
+}
+
+@media (min-width: 900px) {
+  h1 {
+    font-size: 2.125rem;
+  }
+
+  .auth {
+    grid-template-rows: none;
+    grid-template-columns: minmax(360px, 44%) 1fr;
+  }
+
+  .auth-brand {
+    align-content: center;
+    padding: 48px;
+  }
+
+  .auth-brand .wordmark {
+    font-size: 1.5rem;
+  }
+
+  .auth-tagline {
+    font-size: 1.125rem;
+  }
+
+  .fdi {
+    margin-top: 40px;
+  }
+
+  .auth-main {
+    align-self: center;
+    padding: 32px 40px;
+  }
+
+  .shell {
+    display: grid;
+    grid-template-columns: 248px 1fr;
+  }
+
+  .shell-side {
+    position: sticky;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 24px;
+    padding: 28px 20px;
+  }
+
+  .shell-clinic {
+    display: grid;
+    gap: 2px;
+    font-size: 0.9375rem;
+  }
+
+  .shell-nav {
+    position: static;
+    flex-direction: column;
+    gap: 2px;
+    background: none;
+    border: 0;
+    padding: 0;
+  }
+
+  .shell-nav a {
+    flex: none;
+    padding: 10px 12px;
+    border-top: 0;
+    border-left: 3px solid transparent;
+    border-radius: 0 8px 8px 0;
+    color: inherit;
+    opacity: 0.78;
+    text-align: left;
+  }
+
+  .shell-nav a.active {
+    color: inherit;
+    opacity: 1;
+    border-left-color: var(--accent);
+    background: color-mix(in srgb, var(--brand-ink) 10%, transparent);
+  }
+
+  .shell-foot {
+    margin-top: auto;
+    display: grid;
+    gap: 2px;
+  }
+
+  .shell-user {
+    display: block;
+    opacity: 0.75;
+    overflow-wrap: anywhere;
+  }
+
+  .shell-main {
+    padding: 40px 40px 64px;
+  }
+}
