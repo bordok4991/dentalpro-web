@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState, type CSSProperties, type FormEvent } from 'react';
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ageFrom, todayIso, useI18n, type Key } from '../lib/i18n';
 import { errorKey } from '../lib/errors';
@@ -7,14 +7,17 @@ import {
   CLINICAL_ROLES,
   FDI_DECIDUOUS,
   FDI_PERMANENT,
+  type Appointment,
   type EntryInput,
   type MedicalInput,
   type Patient,
   type PatientEntry,
   type PatientMedical,
+  type ToothStatus,
 } from '../lib/types';
 import { Button, Loading, Notice, SelectField, TextField } from '../components/ui';
 import { PatientForm } from '../components/PatientForm';
+import { Odontogram, ToothEditor } from '../components/Odontogram';
 
 export function Karton() {
   const { id = '' } = useParams();
@@ -26,6 +29,8 @@ export function Karton() {
   const [patient, setPatient] = useState<Patient | null | undefined>(undefined);
   const [medical, setMedical] = useState<PatientMedical | null>(null);
   const [entries, setEntries] = useState<PatientEntry[] | null>(null);
+  const [teeth, setTeeth] = useState<Map<number, ToothStatus>>(new Map());
+  const [upcoming, setUpcoming] = useState<Appointment[] | null>(null);
   const [error, setError] = useState<Key | null>(null);
   const [tooth, setTooth] = useState<number | null>(null);
   const [adding, setAdding] = useState(false);
@@ -33,14 +38,18 @@ export function Karton() {
   const load = useCallback(async () => {
     setError(null);
     try {
-      const [p, m, e] = await Promise.all([
+      const [p, m, e, ts, ap] = await Promise.all([
         api.patient(id),
         clinical ? api.medical(id) : Promise.resolve(null),
         clinical ? api.entries(id) : Promise.resolve([] as PatientEntry[]),
+        clinical ? api.teeth(id) : Promise.resolve([] as ToothStatus[]),
+        api.upcomingFor(id),
       ]);
       setPatient(p);
       setMedical(m);
       setEntries(e);
+      setTeeth(new Map(ts.map((x) => [x.tooth, x])));
+      setUpcoming(ap);
     } catch (err) {
       setError(errorKey(err));
       setPatient((prev) => (prev === undefined ? null : prev));
@@ -50,6 +59,7 @@ export function Karton() {
   useEffect(() => {
     setPatient(undefined);
     setEntries(null);
+    setUpcoming(null);
     setTooth(null);
     setAdding(false);
     void load();
@@ -113,12 +123,57 @@ export function Karton() {
         </section>
       )}
 
+      <section className="block" aria-labelledby="k-appts">
+        <div className="block-head">
+          <h2 id="k-appts">{t('karton.appointments')}</h2>
+          {!patient.is_archived && (
+            <Link className="btn btn-primary" to={`/calendar?pacijent=${patient.id}`}>
+              {t('karton.book')}
+            </Link>
+          )}
+        </div>
+        {upcoming === null ? (
+          <Loading />
+        ) : upcoming.length === 0 ? (
+          <p className="muted">{t('karton.noAppointments')}</p>
+        ) : (
+          <ul className="rows appt-rows">
+            {upcoming.map((a) => (
+              <li key={a.id}>
+                <Link className="appt-row" to={`/calendar?dan=${localDay(a.starts_at)}`}>
+                  <strong>{date(a.starts_at)}</strong>
+                  <span>
+                    {hhmm(a.starts_at)}–{hhmm(a.ends_at)}
+                  </span>
+                  <span>{a.service}</span>
+                  <span className="muted">{a.doctor?.full_name}</span>
+                  <span className={`tag appt-st-${a.status}`}>{t(`cal.status.${a.status}` as Key)}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
       {clinical ? (
         <>
           <section className="block">
             <h2>{t('karton.teeth')}</h2>
-            <p className="hint">{t('karton.teethHint')}</p>
-            <ToothMap counts={counts} selected={tooth} onSelect={(n) => setTooth(n === tooth ? null : n)} />
+            <p className="hint">{t('karton.teethHintEdit')}</p>
+            <div className={tooth == null ? 'teeth-layout' : 'teeth-layout teeth-layout-open'}>
+              <Odontogram statuses={teeth} counts={counts} selected={tooth} onSelect={(n) => setTooth(n === tooth ? null : n)} />
+              {tooth != null && (
+                <ToothEditor
+                  key={tooth}
+                  clinicId={clinicId}
+                  patientId={patient.id}
+                  tooth={tooth}
+                  status={teeth.get(tooth)}
+                  onClose={() => setTooth(null)}
+                  onSaved={(st) => setTeeth((m) => new Map(m).set(st.tooth, st))}
+                />
+              )}
+            </div>
           </section>
 
           <section className="block">
@@ -204,69 +259,6 @@ export function Karton() {
 
 function sortEntries(list: PatientEntry[]): PatientEntry[] {
   return [...list].sort((a, b) => (a.entry_date === b.entry_date ? b.created_at.localeCompare(a.created_at) : b.entry_date.localeCompare(a.entry_date)));
-}
-
-/** Zubna šema: pogled doktora prema pacijentu. Gore desno je zub 18, dolje desno 48. */
-const QUADRANTS_PERMANENT = [
-  [18, 17, 16, 15, 14, 13, 12, 11],
-  [21, 22, 23, 24, 25, 26, 27, 28],
-  [48, 47, 46, 45, 44, 43, 42, 41],
-  [31, 32, 33, 34, 35, 36, 37, 38],
-];
-const QUADRANTS_DECIDUOUS = [
-  [55, 54, 53, 52, 51],
-  [61, 62, 63, 64, 65],
-  [85, 84, 83, 82, 81],
-  [71, 72, 73, 74, 75],
-];
-
-function ToothMap({ counts, selected, onSelect }: { counts: Map<number, number>; selected: number | null; onSelect: (n: number) => void }) {
-  const { t } = useI18n();
-  const hasDeciduous = [...counts.keys()].some((n) => n >= 51);
-  const [deciduous, setDeciduous] = useState(hasDeciduous);
-
-  function jaw(quads: number[][], label: string) {
-    return (
-      <div className="jaw" role="group" aria-label={label}>
-        {quads.map((q, i) => (
-          <div key={i} className="quad" style={{ '--n': q.length } as CSSProperties}>
-            {q.map((n) => {
-              const c = counts.get(n) ?? 0;
-              return (
-                <button
-                  key={n}
-                  type="button"
-                  className={`tooth${c ? ' tooth-has' : ''}`}
-                  aria-pressed={selected === n}
-                  aria-label={t('karton.toothButton', { n, c })}
-                  onClick={() => onSelect(n)}
-                >
-                  {n}
-                  {c > 0 && <span className="tooth-count">{c}</span>}
-                </button>
-              );
-            })}
-          </div>
-        ))}
-      </div>
-    );
-  }
-
-  return (
-    <div className="toothmap">
-      {jaw(QUADRANTS_PERMANENT.slice(0, 2), t('karton.upper'))}
-      {jaw(QUADRANTS_PERMANENT.slice(2), t('karton.lower'))}
-      {deciduous && (
-        <div className="toothmap-deciduous">
-          {jaw(QUADRANTS_DECIDUOUS.slice(0, 2), `${t('karton.upper')}, ${t('entry.deciduous')}`)}
-          {jaw(QUADRANTS_DECIDUOUS.slice(2), `${t('karton.lower')}, ${t('entry.deciduous')}`)}
-        </div>
-      )}
-      <button type="button" className="link-btn" aria-expanded={deciduous} onClick={() => setDeciduous((d) => !d)}>
-        {deciduous ? t('karton.hideDeciduous') : t('karton.showDeciduous')}
-      </button>
-    </div>
-  );
 }
 
 function ToothSelect({ value, onChange }: { value: number | null; onChange: (n: number | null) => void }) {
@@ -521,4 +513,14 @@ function ArchiveBlock({ patient, onChange }: { patient: Patient; onChange: (p: P
       </div>
     </section>
   );
+}
+
+function hhmm(iso: string): string {
+  const d = new Date(iso);
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
+function localDay(iso: string): string {
+  const d = new Date(iso);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }

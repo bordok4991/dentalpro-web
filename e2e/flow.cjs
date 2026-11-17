@@ -273,13 +273,13 @@ const ok = (name, cond, extra = '') => { cond ? pass++ : fail++; console.log(`  
   await page.getByRole('button', { name: 'Sačuvaj zapis' }).click();
   await page.locator('.entry', { hasText: 'Karijes profunda' }).waitFor();
   ok('zapis s zubom je u historiji, s autorom', (await page.locator('.entry').first().innerText()).includes('Autor: Selma Kovač'));
-  ok('zub 36 je označen na šemi', (await page.getByRole('button', { name: 'Zub 36, zapisa: 1' }).count()) === 1 && (await page.locator('.tooth-has').count()) === 1);
+  ok('zub 36 je označen na šemi', (await page.getByRole('button', { name: 'Zub 36: zapisa: 1' }).count()) === 1 && (await page.locator('.tooth-count').count()) === 1);
   await page.getByRole('button', { name: 'Novi zapis' }).click();
   await page.getByLabel('Napomena', { exact: true }).fill('Kontrola za 6 mjeseci');
   await page.getByRole('button', { name: 'Sačuvaj zapis' }).click();
   await page.locator('.entry', { hasText: 'Kontrola za 6 mjeseci' }).waitFor();
   await page.getByRole('button', { name: 'Prikaži mliječne zube' }).click();
-  await page.getByRole('button', { name: 'Zub 55, zapisa: 0' }).click();
+  await page.getByRole('button', { name: 'Zub 55: zdrav' }).click();
   await waitText(page, 'Za zub 55 još nema zapisa.');
   await page.getByRole('button', { name: 'Novi zapis' }).click();
   ok('novi zapis preuzima izabrani zub', (await page.getByLabel('Zub (FDI)').inputValue()) === '55');
@@ -287,7 +287,7 @@ const ok = (name, cond, extra = '') => { cond ? pass++ : fail++; console.log(`  
   await page.getByRole('button', { name: 'Sačuvaj zapis' }).click();
   await page.locator('.entry', { hasText: 'Pulpitis' }).waitFor();
   ok('filter po zubu prikazuje samo njegov zapis', (await page.locator('.entry').count()) === 1);
-  await page.getByRole('button', { name: 'Zub 36, zapisa: 1' }).click();
+  await page.getByRole('button', { name: 'Zub 36: zapisa: 1' }).click();
   await waitText(page, 'Zapisi za zub 36');
   ok('klik na zub 36 prikazuje njegovu historiju', (await page.locator('.entry').count()) === 1 && (await page.locator('.entry').innerText()).includes('Karijes profunda'));
   await page.getByRole('button', { name: 'Svi zapisi' }).click();
@@ -360,6 +360,80 @@ const ok = (name, cond, extra = '') => { cond ? pass++ : fail++; console.log(`  
   await shot(page, '15-karton-recepcija');
   await logout(page);
 
+  console.log('== Zubi i kalendar');
+  await login(page, 'vlasnik@example.test');
+  await waitText(page, 'Danas nema zakazanih termina.');
+  ok('pregled ima blok za današnje termine', true);
+  await page.goto(kartonUrl);
+  await page.getByRole('button', { name: /^Zub 36:/ }).click();
+  await waitText(page, 'Prvi kutnjak, donji lijevi');
+  await page.getByRole('button', { name: 'Distalno: Zdravo' }).click();
+  ok('karijes se upisuje na površinu', (await page.getByRole('button', { name: 'Distalno: Karijes' }).count()) === 1);
+  await page.getByRole('button', { name: 'Planirano', exact: true }).click();
+  await page.getByRole('button', { name: 'Okluzalno: Zdravo' }).click();
+  await page.getByRole('button', { name: 'Sačuvaj stanje zuba' }).click();
+  await waitText(page, 'Stanje zuba je sačuvano.');
+  ok('zub 36 na šemi pokazuje karijes i plan', (await page.getByRole('button', { name: /^Zub 36: Karijes D, Planirano O/ }).count()) === 1 && (await page.locator('.tooth-plan').count()) === 1);
+  await page.getByRole('button', { name: 'Zub 46: zdrav' }).click();
+  await waitText(page, 'Prvi kutnjak, donji desni');
+  await page.getByRole('button', { name: 'Implantat', exact: true }).click();
+  await page.getByRole('button', { name: 'Sačuvaj stanje zuba' }).click();
+  await waitText(page, 'Stanje zuba je sačuvano.');
+  await page.getByRole('button', { name: 'Zub 18: zdrav' }).click();
+  await page.getByRole('button', { name: 'Nedostaje', exact: true }).click();
+  ok('zub koji nedostaje nema površina', await has(page, 'Zub koji nedostaje nema površina.'));
+  await page.getByRole('button', { name: 'Sačuvaj stanje zuba' }).click();
+  await waitText(page, 'Stanje zuba je sačuvano.');
+  await page.reload();
+  await page.getByRole('button', { name: /^Zub 46: Implantat/ }).waitFor();
+  ok('stanje zuba ostaje nakon ponovnog učitavanja', (await page.getByRole('button', { name: /^Zub 36: Karijes D/ }).count()) === 1 && (await page.getByRole('button', { name: /^Zub 18: Nedostaje/ }).count()) === 1);
+  await page.getByRole('button', { name: /^Zub 36:/ }).click();
+  await waitText(page, 'Prvi kutnjak, donji lijevi');
+  await shot(page, '17-zubi');
+
+  const tomorrow = (() => { const d = new Date(Date.now() + 86400000); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; })();
+  await page.getByRole('link', { name: 'Zakaži termin' }).click();
+  await page.waitForURL(/\/calendar/);
+  await page.locator('.picked', { hasText: 'Begić Amra' }).waitFor();
+  ok('zakazivanje iz kartona preuzima pacijenta', true);
+  await page.getByLabel('Datum', { exact: true }).fill(tomorrow);
+  await page.getByLabel('Početak').fill('10:00');
+  await page.getByLabel('Trajanje').selectOption('60');
+  await page.getByLabel('Usluga').fill('Kompozitni ispun 36');
+  await page.getByRole('button', { name: 'Zakaži termin' }).click();
+  await page.locator('.appt', { hasText: 'Amra Begić' }).waitFor();
+  ok('termin se vidi u kalendaru za sutra', page.url().includes('dan=' + tomorrow) && (await page.locator('.appt').count()) === 1);
+  await page.getByRole('button', { name: 'Novi termin' }).click();
+  await page.getByLabel('Pronađi pacijenta').fill('begic');
+  await page.locator('.picker-list button', { hasText: 'Begić Amra' }).click();
+  await page.getByLabel('Početak').fill('10:30');
+  await page.getByLabel('Usluga').fill('Kontrola');
+  await page.getByRole('button', { name: 'Zakaži termin' }).click();
+  await waitText(page, 'Doktor već ima termin u to vrijeme.');
+  ok('preklapanje termina istog doktora je odbijeno', (await page.locator('.appt').count()) === 1);
+  await page.getByLabel('Početak').fill('11:00');
+  await page.getByRole('button', { name: 'Zakaži termin' }).click();
+  await page.locator('.appt').nth(1).waitFor();
+  ok('termin nakon prethodnog je zakazan', (await page.locator('.appt').count()) === 2 && (await has(page, 'Termina: 2')));
+  await page.locator('.appt', { hasText: '10:00' }).click();
+  await page.getByRole('button', { name: 'Potvrđen', exact: true }).click();
+  await page.locator('.appt.appt-st-potvrdjen').waitFor();
+  ok('status termina se mijenja', true);
+  await page.locator('.appt', { hasText: '11:00' }).click();
+  await page.getByRole('button', { name: 'Otkaži termin' }).click();
+  await page.getByRole('button', { name: 'Potvrdi otkazivanje' }).click();
+  await page.waitForFunction(() => document.querySelectorAll('.appt').length === 1);
+  ok('otkazani termin nestaje iz rasporeda', await has(page, 'Termina: 1'));
+  await page.getByLabel('Prikaži otkazane').check();
+  ok('otkazani se mogu prikazati', (await page.locator('.appt.appt-st-otkazan').count()) === 1);
+  await page.getByLabel('Prikaži otkazane').uncheck();
+  await page.locator('.appt', { hasText: '10:00' }).click();
+  await shot(page, '18-kalendar');
+  await page.getByRole('link', { name: 'Otvori karton' }).click();
+  await page.locator('.appt-row', { hasText: 'Kompozitni ispun 36' }).waitFor();
+  ok('karton prikazuje naredni termin', (await page.locator('.appt-row').count()) === 1 && (await has(page, 'Potvrđen')));
+  await logout(page);
+
   console.log('== Jezik, potvrda emaila, nova lozinka');
   await login(page, 'vlasnik@example.test');
   await waitText(page, 'Dobar dan, Selma');
@@ -403,7 +477,7 @@ const ok = (name, cond, extra = '') => { cond ? pass++ : fail++; console.log(`  
 
   console.log('== Izgled');
   const overflow = [];
-  for (const [p, who] of [['/login', null], ['/register', null], ['/', 'vlasnik@example.test'], ['/team', 'vlasnik@example.test'], ['/settings', 'vlasnik@example.test'], ['/patients', 'vlasnik@example.test'], [new URL(kartonUrl).pathname, 'vlasnik@example.test']]) {
+  for (const [p, who] of [['/login', null], ['/register', null], ['/', 'vlasnik@example.test'], ['/team', 'vlasnik@example.test'], ['/settings', 'vlasnik@example.test'], ['/patients', 'vlasnik@example.test'], ['/calendar', 'vlasnik@example.test'], [new URL(kartonUrl).pathname, 'vlasnik@example.test']]) {
     if (who && !(await page.evaluate(() => Object.keys(localStorage).some((k) => k.endsWith('-auth-token'))))) { await login(page, who); await page.waitForURL((u) => new URL(u).pathname === '/'); await page.locator('.shell').waitFor(); }
     await page.goto(BASE + p);
     await page.waitForTimeout(500);

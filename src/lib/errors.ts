@@ -24,6 +24,9 @@ const MAP: [RegExp, Key][] = [
   [/patients_email_check/i, 'err.email'],
   [/ne pripada ovoj ordinaciji/i, 'err.patientClinic'],
   [/first_name_check|last_name_check/i, 'err.patientName'],
+  [/appointments_no_overlap/i, 'err.overlap'],
+  [/ne radi u ovoj ordinaciji/i, 'err.doctorNotMember'],
+  [/appointments_time_check/i, 'err.apptTime'],
   [/NOT_ALLOWED|row-level security|permission denied/i, 'err.notAllowed'],
   [/Failed to fetch|NetworkError|Load failed/i, 'err.network'],
 ];

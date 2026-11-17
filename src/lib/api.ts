@@ -1,5 +1,24 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Clinic, EntryInput, Invite, Locale, MedicalInput, Member, Membership, Patient, PatientEntry, PatientInput, PatientMedical, Profile, Role } from './types';
+import type {
+  Appointment,
+  AppointmentInput,
+  AppointmentStatus,
+  Clinic,
+  EntryInput,
+  Invite,
+  Locale,
+  MedicalInput,
+  Member,
+  Membership,
+  Patient,
+  PatientEntry,
+  PatientInput,
+  PatientMedical,
+  Profile,
+  Role,
+  ToothInput,
+  ToothStatus,
+} from './types';
 
 /**
  * Sve što aplikacija radi s bazom je ovdje, na jednom mjestu.
@@ -204,6 +223,84 @@ export function makeApi(sb: SupabaseClient) {
       return (data ?? []) as unknown as PatientEntry[];
     },
 
+    // ---------- Stanje zuba ----------
+
+    async teeth(patientId: string): Promise<ToothStatus[]> {
+      const { data, error } = await sb.from('tooth_status').select(TOOTH_COLS).eq('patient_id', patientId);
+      if (error) throw error;
+      return (data ?? []) as ToothStatus[];
+    },
+
+    async saveTooth(clinicId: string, patientId: string, tooth: number, input: ToothInput): Promise<ToothStatus> {
+      const surfaces = input.condition === 'nedostaje' ? {} : input.surfaces;
+      const { data, error } = await sb
+        .from('tooth_status')
+        .upsert(
+          {
+            clinic_id: clinicId,
+            patient_id: patientId,
+            tooth,
+            condition: input.condition,
+            endo: input.condition === 'nedostaje' ? false : input.endo,
+            surfaces,
+            note: blank(input.note),
+          },
+          { onConflict: 'patient_id,tooth' },
+        )
+        .select(TOOTH_COLS)
+        .single();
+      if (error) throw error;
+      return data as ToothStatus;
+    },
+
+    // ---------- Termini ----------
+
+    /** Termini ordinacije koji počinju u zadatom periodu [od, do). */
+    async appointments(clinicId: string, fromIso: string, toIso: string): Promise<Appointment[]> {
+      const { data, error } = await sb
+        .from('appointments')
+        .select(APPT_COLS)
+        .eq('clinic_id', clinicId)
+        .gte('starts_at', fromIso)
+        .lt('starts_at', toIso)
+        .order('starts_at', { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as unknown as Appointment[];
+    },
+
+    /** Naredni termini jednog pacijenta (bez otkazanih). */
+    async upcomingFor(patientId: string, limit = 5): Promise<Appointment[]> {
+      const { data, error } = await sb
+        .from('appointments')
+        .select(APPT_COLS)
+        .eq('patient_id', patientId)
+        .gte('ends_at', new Date().toISOString())
+        .not('status', 'in', '(otkazan,nije_dosao)')
+        .order('starts_at', { ascending: true })
+        .limit(limit);
+      if (error) throw error;
+      return (data ?? []) as unknown as Appointment[];
+    },
+
+    async createAppointment(clinicId: string, input: AppointmentInput): Promise<Appointment> {
+      const { data, error } = await sb
+        .from('appointments')
+        .insert({ clinic_id: clinicId, ...cleanAppointment(input) })
+        .select(APPT_COLS)
+        .single();
+      if (error) throw error;
+      return data as unknown as Appointment;
+    },
+
+    async updateAppointment(id: string, patch: Partial<AppointmentInput> & { status?: AppointmentStatus }): Promise<Appointment> {
+      const body: Record<string, unknown> = 'service' in patch ? cleanAppointment(patch as AppointmentInput) : {};
+      if (patch.status) body.status = patch.status;
+      const { data, error } = await sb.from('appointments').update(body).eq('id', id).select(APPT_COLS);
+      if (error) throw error;
+      if (!data || data.length === 0) throw new Error('NOT_ALLOWED');
+      return data[0] as unknown as Appointment;
+    },
+
     async addEntry(clinicId: string, patientId: string, input: EntryInput): Promise<PatientEntry> {
       const { data, error } = await sb
         .from('patient_entries')
@@ -282,4 +379,19 @@ export function parseInviteToken(input: string): string | null {
 export function inviteLink(token: string): string {
   const base = import.meta.env.BASE_URL.replace(/\/$/, '');
   return `${window.location.origin}${base}/invite/${token}`;
+}
+
+const TOOTH_COLS = 'patient_id, clinic_id, tooth, condition, endo, surfaces, note, updated_at';
+const APPT_COLS =
+  'id, clinic_id, patient_id, doctor_id, starts_at, ends_at, service, note, status, created_at, patient:patients(first_name, last_name, card_number, phone), doctor:profiles!appointments_doctor_id_fkey(full_name)';
+
+function cleanAppointment(a: AppointmentInput) {
+  return {
+    patient_id: a.patient_id,
+    doctor_id: a.doctor_id,
+    starts_at: a.starts_at,
+    ends_at: a.ends_at,
+    service: a.service.trim(),
+    note: blank(a.note),
+  };
 }

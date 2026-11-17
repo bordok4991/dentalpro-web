@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { daysUntil, useI18n } from '../lib/i18n';
 import { api, useSession } from '../lib/session';
-import type { Clinic } from '../lib/types';
+import type { Appointment, Clinic } from '../lib/types';
+import type { Key } from '../lib/i18n';
 
 export function StatusBanner({ clinic }: { clinic: Clinic }) {
   const { t, days, date } = useI18n();
@@ -70,6 +71,8 @@ export function Overview() {
       </header>
 
       <StatusBanner clinic={clinic} />
+
+      {isStaff && <TodayBlock clinicId={clinic.id} />}
 
       <section className="block">
         <div className="block-head">
@@ -148,5 +151,66 @@ export function Overview() {
         </section>
       )}
     </>
+  );
+}
+
+function TodayBlock({ clinicId }: { clinicId: string }) {
+  const { t } = useI18n();
+  const [list, setList] = useState<Appointment[] | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    const from = new Date();
+    from.setHours(0, 0, 0, 0);
+    const to = new Date(from);
+    to.setDate(to.getDate() + 1);
+    api
+      .appointments(clinicId, from.toISOString(), to.toISOString())
+      .then((r) => alive && setList(r.filter((a) => a.status !== 'otkazan')))
+      .catch(() => alive && setList([]));
+    return () => {
+      alive = false;
+    };
+  }, [clinicId]);
+
+  const time = (iso: string) => {
+    const d = new Date(iso);
+    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  };
+  const left = (list ?? []).filter((a) => new Date(a.ends_at).getTime() > Date.now() && a.status !== 'zavrsen' && a.status !== 'nije_dosao');
+
+  return (
+    <section className="block">
+      <div className="block-head">
+        <h2>{t('overview.today')}</h2>
+        <Link className="text-link" to="/calendar">
+          {t('overview.openCalendar')}
+        </Link>
+      </div>
+      {list === null ? (
+        <p>{t('common.loading')}</p>
+      ) : list.length === 0 ? (
+        <p className="muted">{t('overview.noToday')}</p>
+      ) : (
+        <>
+          <p>{t('overview.todayCount', { n: list.length })}</p>
+          {left.length > 0 && (
+            <ul className="rows appt-rows">
+              {left.slice(0, 5).map((a) => (
+                <li key={a.id}>
+                  <Link className="appt-row" to={`/patients/${a.patient_id}`}>
+                    <strong>{time(a.starts_at)}</strong>
+                    <span>{a.patient ? `${a.patient.first_name} ${a.patient.last_name}` : ''}</span>
+                    <span>{a.service}</span>
+                    <span className="muted">{a.doctor?.full_name}</span>
+                    <span className={`tag appt-st-${a.status}`}>{t(`cal.status.${a.status}` as Key)}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
+      )}
+    </section>
   );
 }

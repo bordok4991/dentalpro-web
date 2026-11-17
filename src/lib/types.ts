@@ -115,3 +115,53 @@ export type EntryInput = Pick<PatientEntry, 'entry_date' | 'tooth' | 'diagnosis'
 /** FDI oznake: stalni zubi 11–48, mliječni 51–85. */
 export const FDI_PERMANENT: number[] = [1, 2, 3, 4].flatMap((q) => [1, 2, 3, 4, 5, 6, 7, 8].map((t) => q * 10 + t));
 export const FDI_DECIDUOUS: number[] = [5, 6, 7, 8].flatMap((q) => [1, 2, 3, 4, 5].map((t) => q * 10 + t));
+
+// ---------- Stanje zuba ----------
+export type ToothCondition = 'zdrav' | 'nedostaje' | 'krunica' | 'implantat';
+export type SurfaceKey = 'M' | 'O' | 'D' | 'B' | 'L';
+export type SurfaceMark = 'karijes' | 'ispun' | 'plan';
+export const TOOTH_CONDITIONS: ToothCondition[] = ['zdrav', 'nedostaje', 'krunica', 'implantat'];
+export const SURFACE_MARKS: SurfaceMark[] = ['karijes', 'ispun', 'plan'];
+
+export interface ToothStatus {
+  patient_id: string;
+  clinic_id: string;
+  tooth: number;
+  condition: ToothCondition;
+  endo: boolean;
+  surfaces: Partial<Record<SurfaceKey, SurfaceMark>>;
+  note: string | null;
+  updated_at: string;
+}
+
+export type ToothInput = Pick<ToothStatus, 'condition' | 'endo' | 'surfaces' | 'note'>;
+
+// ---------- Termini ----------
+export type AppointmentStatus = 'zakazan' | 'potvrdjen' | 'stigao' | 'u_toku' | 'zavrsen' | 'otkazan' | 'nije_dosao';
+export const APPOINTMENT_STATUSES: AppointmentStatus[] = ['zakazan', 'potvrdjen', 'stigao', 'u_toku', 'zavrsen', 'nije_dosao', 'otkazan'];
+/** Termini koji zauzimaju vrijeme doktora. */
+export const BUSY_STATUSES: AppointmentStatus[] = ['zakazan', 'potvrdjen', 'stigao', 'u_toku', 'zavrsen'];
+
+export interface Appointment {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  doctor_id: string;
+  starts_at: string;
+  ends_at: string;
+  service: string;
+  note: string | null;
+  status: AppointmentStatus;
+  created_at: string;
+  patient: { first_name: string; last_name: string; card_number: number; phone: string | null } | null;
+  doctor: { full_name: string } | null;
+}
+
+export interface AppointmentInput {
+  patient_id: string;
+  doctor_id: string;
+  starts_at: string;
+  ends_at: string;
+  service: string;
+  note: string | null;
+}

@@ -13,6 +13,7 @@ import { Team } from './pages/Team';
 import { Settings } from './pages/Settings';
 import { PatientNew, Patients } from './pages/Patients';
 import { Karton } from './pages/Karton';
+import { Calendar } from './pages/Calendar';
 
 export function App() {
   const { session } = useSession();
@@ -71,6 +72,7 @@ function SignedIn() {
     <Shell>
       <Routes>
         <Route path="/" element={<Overview />} />
+        {isStaff && <Route path="/calendar" element={<Calendar />} />}
         {isStaff && <Route path="/team" element={<Team />} />}
         {isStaff && <Route path="/patients" element={<Patients />} />}
         {isStaff && <Route path="/patients/new" element={<PatientNew />} />}

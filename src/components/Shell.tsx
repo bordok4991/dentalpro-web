@@ -34,6 +34,7 @@ export function Shell({ children }: { children: ReactNode }) {
     { to: '/', label: t('nav.overview'), end: true },
     ...(isStaff
       ? [
+          { to: '/calendar', label: t('nav.calendar'), end: false },
           { to: '/patients', label: t('nav.patients'), end: false },
           { to: '/team', label: t('nav.team'), end: false },
         ]
