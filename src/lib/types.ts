@@ -28,6 +28,10 @@ export interface Clinic {
   currency: Currency;
   online_booking: boolean;
   working_hours: WorkingHours;
+  /** Opis ordinacije za pacijente */
+  about: string | null;
+  /** Slika prostora ordinacije */
+  cover_url: string | null;
 }
 
 export type Currency = 'KM' | 'EUR' | 'RSD';
@@ -42,6 +46,12 @@ export interface Profile {
   email: string | null;
   locale: Locale;
   avatar_url: string | null;
+  /** Kratko o doktoru, za pacijente */
+  bio: string | null;
+  /** Obrazovanje i edukacije, jedna stavka po redu ("2014 — Stomatološki fakultet") */
+  education: string | null;
+  /** Veća slika za predstavljanje doktora */
+  photo_url: string | null;
 }
 
 export interface Membership {
@@ -303,6 +313,9 @@ export interface Doctor {
   avatar_url: string | null;
   specialty: string | null;
   role: Role;
+  bio: string | null;
+  education: string | null;
+  photo_url: string | null;
 }
 
 export interface MyAppointment {

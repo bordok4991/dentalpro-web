@@ -365,6 +365,21 @@ M2=$(msg $DA "Za brisanje")
 eq "vlasnik povlači poslanu poruku" "$(as $OA "delete from patient_messages where id='$M2' returning 1" | grep -c '^1$')" "1"
 eq "lični savjeti su u audit logu" "$(admin "select count(*) > 0 from audit_log where table_name='patient_messages'")" "t"
 
+echo "== O doktoru i ordinaciji"
+as $DA "update profiles set bio='Doktor stomatologije.', education=E'2014 — Stomatološki fakultet\nKurs estetike', photo_url='https://x.test/d.jpg' where id='$DA'" >/dev/null
+eq "doktor sam upisuje biografiju i obrazovanje" "$(admin "select bio from profiles where id='$DA'")" "Doktor stomatologije."
+eq "pacijent vidi biografiju doktora" "$(as $P2 "select bio from clinic_doctors('$CA') where user_id='$DA'" | tail -1)" "Doktor stomatologije."
+eq "pacijent vidi veću sliku doktora" "$(as $P2 "select photo_url from clinic_doctors('$CA') where user_id='$DA'" | tail -1)" "https://x.test/d.jpg"
+as $RA "update profiles set bio='hak' where id='$DA'" >/dev/null
+eq "niko ne mijenja tuđu biografiju" "$(admin "select bio from profiles where id='$DA'")" "Doktor stomatologije."
+has "biografija ima ograničenu dužinu" "$(as $DA "update profiles set bio=repeat('a',1501) where id='$DA'")" "profiles_about_check"
+as $OA "update clinics set about='Ordinacija u Goraždu.', cover_url='https://x.test/c.jpg' where id='$CA'" >/dev/null
+eq "vlasnik upisuje opis ordinacije" "$(admin "select about from clinics where id='$CA'")" "Ordinacija u Goraždu."
+eq "pacijent vidi opis ordinacije" "$(as $P2 "select about from clinics where id='$CA'" | tail -1)" "Ordinacija u Goraždu."
+as $DA "update clinics set about='hak' where id='$CA'" >/dev/null
+eq "doktor ne mijenja opis ordinacije" "$(admin "select about from clinics where id='$CA'")" "Ordinacija u Goraždu."
+eq "stranac ne vidi doktore ordinacije" "$(as $OUT "select count(*) from clinic_doctors('$CA')" | tail -1)" "0"
+
 echo "== Ukidanje pristupa pacijentu"
 has "pacijent ne ukida tuđi pristup" "$(as $P1 "select unlink_patient_account('$PT1')")" "Nemate pravo"
 as $RA "select unlink_patient_account('$PT1')" >/dev/null

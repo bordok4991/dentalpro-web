@@ -435,6 +435,22 @@ export const bsMore = {
   'pv.exit': 'Izađi',
   'pv.noAction': 'U pregledu se ništa ne mijenja. Ovo dugme radi samo pacijentu u njegovoj aplikaciji.',
   'pv.profile': 'Ime, telefon, jezik i lozinku pacijent uređuje sam u svojoj aplikaciji.',
+
+  'p.aboutTitle': 'O nama',
+  'p.education': 'Obrazovanje i edukacije',
+  'p.clinicPhoto': 'Ordinacija {name}',
+  'settings.present': 'Predstavljanje pacijentima',
+  'settings.presentLead': 'Pacijenti ovo vide u aplikaciji, na početnoj stranici pod "O nama".',
+  'settings.bigPhoto': 'Veća slika',
+  'settings.bigPhotoHint': 'Npr. u ordinaciji ili uz diplome. Najljepše izgleda položena slika (šira nego viša).',
+  'settings.bio': 'Kratko o meni',
+  'settings.bioHint': 'Dvije-tri rečenice: čime se baviš i šta pacijent može očekivati.',
+  'settings.education': 'Obrazovanje i edukacije',
+  'settings.educationHint': 'Jedna stavka po redu. Godina na početku reda prikazuje se posebno, npr. "2014 — Stomatološki fakultet".',
+  'settings.clinicAbout': 'O ordinaciji',
+  'settings.clinicAboutHint': 'Nekoliko rečenica za pacijente: ko ste, šta radite, kako do vas.',
+  'settings.cover': 'Slika ordinacije',
+  'settings.coverHint': 'Prostor ili čekaonica, položena slika.',
 };
 
 export type MoreDict = typeof bsMore;
@@ -871,6 +887,22 @@ export const enMore: MoreDict = {
   'pv.exit': 'Exit',
   'pv.noAction': 'Nothing changes in preview. This button only works for the patient in their own app.',
   'pv.profile': 'The patient edits their name, phone, language and password in their own app.',
+
+  'p.aboutTitle': 'About us',
+  'p.education': 'Education and training',
+  'p.clinicPhoto': '{name} practice',
+  'settings.present': 'How patients see you',
+  'settings.presentLead': 'Patients see this in the app, on the home screen under "About us".',
+  'settings.bigPhoto': 'Large photo',
+  'settings.bigPhotoHint': 'For example at the practice or next to your diplomas. A landscape photo looks best.',
+  'settings.bio': 'About me',
+  'settings.bioHint': 'Two or three sentences: what you do and what patients can expect.',
+  'settings.education': 'Education and training',
+  'settings.educationHint': 'One item per line. A year at the start of a line is shown separately, e.g. "2014 — School of Dental Medicine".',
+  'settings.clinicAbout': 'About the practice',
+  'settings.clinicAboutHint': 'A few sentences for patients: who you are, what you do, how to find you.',
+  'settings.cover': 'Practice photo',
+  'settings.coverHint': 'The practice or waiting room, landscape.',
 };
 
 /** Hrvatski: razlike u odnosu na bosanski. */

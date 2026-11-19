@@ -24,7 +24,6 @@ import type {
   TreatmentPlan,
   EntryInput,
   Invite,
-  Locale,
   MedicalInput,
   Member,
   Membership,
@@ -47,14 +46,17 @@ export function makeApi(sb: SupabaseClient) {
     async profile(userId: string): Promise<Profile | null> {
       const { data, error } = await sb
         .from('profiles')
-        .select('id, full_name, phone, email, locale, avatar_url')
+        .select('id, full_name, phone, email, locale, avatar_url, bio, education, photo_url')
         .eq('id', userId)
         .maybeSingle();
       if (error) throw error;
       return data as Profile | null;
     },
 
-    async updateProfile(userId: string, patch: { full_name?: string; phone?: string | null; locale?: Locale; avatar_url?: string | null }) {
+    async updateProfile(
+      userId: string,
+      patch: Partial<Pick<Profile, 'full_name' | 'phone' | 'locale' | 'avatar_url' | 'bio' | 'education' | 'photo_url'>>,
+    ) {
       const { error } = await sb.from('profiles').update(patch).eq('id', userId);
       if (error) throw error;
     },
@@ -101,6 +103,8 @@ export function makeApi(sb: SupabaseClient) {
           | 'currency'
           | 'online_booking'
           | 'working_hours'
+          | 'about'
+          | 'cover_url'
         >
       >,
     ): Promise<Clinic> {

@@ -3,7 +3,7 @@ import { useI18n, type Key } from '../lib/i18n';
 import { errorKey } from '../lib/errors';
 import { api, useSession } from '../lib/session';
 import { CURRENCIES, LOCALES, type Clinic, type Currency, type Locale, type WorkingHours } from '../lib/types';
-import { Button, Field, Notice, SelectField } from '../components/ui';
+import { Button, Field, Notice, SelectField, TextField } from '../components/ui';
 import { ImageUpload } from '../components/ImageUpload';
 
 export function Settings() {
@@ -35,9 +35,12 @@ export function Settings() {
 
 export function ProfileForm({ withPhoto = true }: { withPhoto?: boolean }) {
   const { t, locale, setLocale } = useI18n();
-  const { profile, user, refresh } = useSession();
+  const { profile, user, refresh, current } = useSession();
+  const presents = withPhoto && !!current && ['owner', 'doctor', 'specialist'].includes(current.role);
   const [fullName, setFullName] = useState(profile?.full_name ?? '');
   const [phone, setPhone] = useState(profile?.phone ?? '');
+  const [bio, setBio] = useState(profile?.bio ?? '');
+  const [education, setEducation] = useState(profile?.education ?? '');
   const [lang, setLang] = useState<Locale>(locale);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ kind: 'ok' | 'error'; key: Key } | null>(null);
@@ -45,6 +48,8 @@ export function ProfileForm({ withPhoto = true }: { withPhoto?: boolean }) {
   useEffect(() => {
     setFullName(profile?.full_name ?? '');
     setPhone(profile?.phone ?? '');
+    setBio(profile?.bio ?? '');
+    setEducation(profile?.education ?? '');
   }, [profile?.id]);
 
   async function submit(e: FormEvent) {
@@ -53,7 +58,12 @@ export function ProfileForm({ withPhoto = true }: { withPhoto?: boolean }) {
     setMsg(null);
     setBusy(true);
     try {
-      await api.updateProfile(user.id, { full_name: fullName.trim(), phone: phone.trim() || null, locale: lang });
+      await api.updateProfile(user.id, {
+        full_name: fullName.trim(),
+        phone: phone.trim() || null,
+        locale: lang,
+        ...(presents ? { bio: bio.trim() || null, education: education.trim() || null } : {}),
+      });
       setLocale(lang);
       await refresh();
       setMsg({ kind: 'ok', key: 'settings.profileSaved' });
@@ -94,6 +104,33 @@ export function ProfileForm({ withPhoto = true }: { withPhoto?: boolean }) {
         </SelectField>
         <Field label={t('settings.loginEmail')} value={user?.email ?? ''} readOnly />
       </div>
+      {presents && user && (
+        <fieldset className="present">
+          <legend>{t('settings.present')}</legend>
+          <p className="hint">{t('settings.presentLead')}</p>
+          <ImageUpload
+            label={t('settings.bigPhoto')}
+            hint={t('settings.bigPhotoHint')}
+            url={profile?.photo_url ?? null}
+            name={profile?.full_name || ''}
+            folder={`users/${user.id}`}
+            kind="cover"
+            onChange={async (url) => {
+              await api.updateProfile(user.id, { photo_url: url });
+              await refresh();
+            }}
+          />
+          <TextField label={t('settings.bio')} hint={t('settings.bioHint')} rows={4} maxLength={1500} value={bio} onChange={(e) => setBio(e.target.value)} />
+          <TextField
+            label={t('settings.education')}
+            hint={t('settings.educationHint')}
+            rows={5}
+            maxLength={2000}
+            value={education}
+            onChange={(e) => setEducation(e.target.value)}
+          />
+        </fieldset>
+      )}
       <Button type="submit" busy={busy}>
         {t('settings.saveProfile')}
       </Button>
@@ -128,6 +165,7 @@ function ClinicForm({ clinic }: { clinic: Clinic }) {
     primary_color: clinic.primary_color,
     accent_color: clinic.accent_color,
     currency: clinic.currency,
+    about: clinic.about ?? '',
   });
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ kind: 'ok' | 'error'; key: Key } | null>(null);
@@ -150,6 +188,7 @@ function ClinicForm({ clinic }: { clinic: Clinic }) {
         primary_color: f.primary_color.toUpperCase(),
         accent_color: f.accent_color.toUpperCase(),
         currency: f.currency as Currency,
+        about: f.about.trim() || null,
       });
       await refresh();
       setMsg({ kind: 'ok', key: 'settings.clinicSaved' });
@@ -194,6 +233,26 @@ function ClinicForm({ clinic }: { clinic: Clinic }) {
           ))}
         </SelectField>
       </div>
+      <TextField
+        label={t('settings.clinicAbout')}
+        hint={t('settings.clinicAboutHint')}
+        rows={4}
+        maxLength={2000}
+        value={f.about}
+        onChange={(e) => set('about')(e.target.value)}
+      />
+      <ImageUpload
+        label={t('settings.cover')}
+        hint={t('settings.coverHint')}
+        url={clinic.cover_url}
+        name={clinic.name}
+        folder={`clinics/${clinic.id}/logo`}
+        kind="cover"
+        onChange={async (url) => {
+          await api.updateClinic(clinic.id, { cover_url: url });
+          await refresh();
+        }}
+      />
       <Button type="submit" busy={busy}>
         {t('settings.saveClinic')}
       </Button>

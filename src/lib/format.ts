@@ -118,3 +118,15 @@ export function isVideoLink(url: string): boolean {
     return false;
   }
 }
+
+/** Obrazovanje: jedna stavka po redu; godina (ili raspon) na početku reda ide posebno. */
+export function educationItems(text: string | null | undefined): { year: string | null; text: string }[] {
+  return (text ?? '')
+    .split('\n')
+    .map((l) => l.trim())
+    .filter(Boolean)
+    .map((l) => {
+      const m = l.match(/^((?:19|20)\d{2}(?:\s*[–-]\s*(?:(?:19|20)\d{2}|danas|today))?)\s*[—–:,.-]?\s+(.+)$/i);
+      return m ? { year: m[1], text: m[2] } : { year: null, text: l };
+    });
+}
