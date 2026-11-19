@@ -24,10 +24,14 @@ export function ClinicServices({ clinicId, photo, canBook }: { clinicId: string;
       <img className="practice-room" src={photo} alt={t('p.treatmentRoom')} width={820} height={1093} loading="lazy" decoding="async" />
       <div className="practice-service-copy">
         <h2 id="practice-services-title">{t('p.practiceServices')}</h2>
-        <ul>
+        <ul role="list">
           {services.map((s) => <li key={s.id}>{s.name}</li>)}
         </ul>
-        {canBook && <Link to="/zakazi" className="text-link">{t('p.book')}</Link>}
+        {canBook && (
+          <Link to="/zakazi" className="practice-service-booking">
+            {t('p.book')}<span aria-hidden="true">↗</span>
+          </Link>
+        )}
       </div>
     </section>
   );
