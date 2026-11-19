@@ -780,6 +780,10 @@ const ok = (name, cond, extra = '') => { cond ? pass++ : fail++; console.log(`  
   const visit = page.locator('.practice-visit');
   ok('kako do nas: slika ulaza, poziv i današnje radno vrijeme', (await visit.locator('img').count()) === 1 && (await visit.getByRole('link', { name: /Nazovi/ }).count()) === 1 && /^danas /.test(await visit.locator('.hours-today').innerText()));
   await shot(page, '31a-pocetna-slike', true);
+  await page.locator('.papp-top').getByRole('link', { name: 'Cjenovnik' }).click();
+  await page.locator('.patient-prices-list li').first().waitFor();
+  const prices = await page.locator('.patient-prices-list').innerText();
+  ok('pacijent vidi cijeli aktivni cjenovnik s cijenama', prices.includes('Izbjeljivanje') && prices.includes('Kompozitni ispun') && prices.includes('KM'), prices);
   await page.locator('.papp-top').getByRole('link', { name: 'O nama' }).click();
   const about = page.locator('.story-doc');
   await about.waitFor();

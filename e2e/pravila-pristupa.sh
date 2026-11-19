@@ -180,7 +180,9 @@ has "isti naziv usluge je odbijen" "$(as $OA "insert into services (clinic_id,na
 has "negativna cijena je odbijena" "$(as $OA "insert into services (clinic_id,name,price) values ('$CA','Y',-5)")" "violates check"
 has "usluga se ne briše, nego isključuje" "$(as $OA "delete from services where id='$S3'")" "permission denied"
 eq "vlasnik B ne vidi cjenovnik ordinacije A" "$(as $OB "select count(*) from services where clinic_id='$CA'" | tail -1)" "0"
-eq "pacijent vidi samo usluge za online zakazivanje" "$(as $P2 "select count(*) from services" | tail -1)" "2"
+S4=$(svc $OA "Stara usluga" 10 30); as $OA "update services set is_active=false where id='$S4'" >/dev/null
+eq "pacijent vidi aktivni cjenovnik, i usluge koje se dogovaraju telefonom" "$(as $P2 "select string_agg(name, ', ' order by name) from services" | tail -1)" "Izbjeljivanje, Kompozitni ispun, Kontrolni pregled"
+eq "pacijent ne vidi isključene usluge" "$(as $P2 "select count(*) from services where id='$S4'" | tail -1)" "0"
 
 echo "== Pacijentski nalog"
 pinv() { as $1 "insert into clinic_invites (clinic_id,email,role,patient_id) values ('${4:-$CA}','$2','patient','$3') returning token" | sed -n 3p; }
