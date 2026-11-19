@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useI18n, type Key } from '../lib/i18n';
 import { errorKey } from '../lib/errors';
 import { parseInviteToken } from '../lib/api';
+import { firstName } from '../lib/format';
 import { api, useSession } from '../lib/session';
 import { Button, Field, LanguageSelect, Notice, Wordmark } from '../components/ui';
 
@@ -51,7 +52,7 @@ export function Welcome() {
     navigate(`/invite/${token}`);
   }
 
-  const first = profile?.full_name.trim().split(/\s+/)[0];
+  const first = firstName(profile?.full_name);
 
   return (
     <div className="solo solo-wide">

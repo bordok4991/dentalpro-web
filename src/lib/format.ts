@@ -62,9 +62,16 @@ export function placeholders(s: string): string[] {
   return [...s.matchAll(/\[[^\]\n]{1,60}\]/g)].map((m) => m[0]);
 }
 
+const TITLE = /^((dr|doc|prof|mr|dipl)\.?\s+)+/i;
+
+/** Ime za pozdrav: prva riječ imena, bez titule ("dr Nisveta …" → "Nisveta"). */
+export function firstName(fullName: string | null | undefined): string {
+  return (fullName ?? '').trim().replace(TITLE, '').split(/\s+/)[0] ?? '';
+}
+
 export function initials(name: string): string {
   return name
-    .replace(/^(dr\.?|doc\.?|prof\.?)\s+/i, '')
+    .replace(TITLE, '')
     .split(/\s+/)
     .filter(Boolean)
     .slice(0, 2)

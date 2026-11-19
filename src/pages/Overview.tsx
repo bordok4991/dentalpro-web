@@ -4,7 +4,7 @@ import { daysUntil, useI18n } from '../lib/i18n';
 import { api, useSession } from '../lib/session';
 import type { Appointment, Clinic, Doctor } from '../lib/types';
 import { Avatar } from '../components/Avatar';
-import { hhmm, localDay } from '../lib/format';
+import { firstName, hhmm, localDay } from '../lib/format';
 import type { Key } from '../lib/i18n';
 
 export function StatusBanner({ clinic }: { clinic: Clinic }) {
@@ -61,7 +61,7 @@ export function Overview() {
 
   if (!current) return null;
   const { clinic } = current;
-  const first = profile?.full_name.trim().split(/\s+/)[0];
+  const first = firstName(profile?.full_name);
   const place = [clinic.address, clinic.city].filter(Boolean).join(', ');
   const hasContact = !!(clinic.doctor_name || place || clinic.phone || clinic.email);
 

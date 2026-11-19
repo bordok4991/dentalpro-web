@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import { Link, Navigate, NavLink, Route, Routes, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { todayIso, useI18n, type Key } from '../lib/i18n';
 import { errorKey } from '../lib/errors';
-import { paragraphs } from '../lib/format';
+import { firstName, paragraphs } from '../lib/format';
 import { api, useSession } from '../lib/session';
 import type { Doctor, MyAppointment, Patient, Post, PostKind, TreatmentPlan } from '../lib/types';
 import { Avatar } from '../components/Avatar';
@@ -204,7 +204,7 @@ function Home() {
 
   if (!current) return null;
   const c = current.clinic;
-  const first = (patient?.first_name || profile?.full_name.trim().split(/\s+/)[0] || '').trim();
+  const first = (patient?.first_name || firstName(profile?.full_name)).trim();
   const next = (appointments ?? [])
     .filter((a) => new Date(a.ends_at).getTime() > Date.now() && ['zakazan', 'potvrdjen', 'stigao', 'u_toku'].includes(a.status))
     .sort((a, b) => a.starts_at.localeCompare(b.starts_at))[0];
