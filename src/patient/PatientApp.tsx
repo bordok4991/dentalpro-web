@@ -13,7 +13,7 @@ import { MyCard } from './PatientCard';
 import { MessageView, UnreadMessages } from './PatientMessages';
 import { VideoEmbed } from '../components/VideoEmbed';
 import { ExitPreview } from './PreviewSwitch';
-import { AboutDoctors, hasProfile } from './AboutDoctors';
+import { AboutDoctors, ClinicStory, hasProfile } from './AboutDoctors';
 
 interface PatientData {
   /** undefined dok se učitava; null kad nalog nije povezan s kartonom */
@@ -259,6 +259,8 @@ function Home() {
         </section>
       )}
 
+      <AboutDoctors doctors={doctors} />
+
       {posts && posts.length > 0 && (
         <section className="papp-section" aria-labelledby="p-news">
           <div className="block-head">
@@ -275,13 +277,12 @@ function Home() {
         </section>
       )}
 
-      <AboutDoctors doctors={doctors} />
-      <ClinicCard doctors={doctors.filter((d) => !hasProfile(d))} full />
+      <ClinicStory doctors={doctors.filter((d) => !hasProfile(d))} />
     </>
   );
 }
 
-export function ClinicCard({ doctors, full }: { doctors: Doctor[]; full?: boolean }) {
+export function ClinicCard({ doctors }: { doctors: Doctor[] }) {
   const { t } = useI18n();
   const { current } = useSession();
   if (!current) return null;
@@ -294,15 +295,7 @@ export function ClinicCard({ doctors, full }: { doctors: Doctor[]; full?: boolea
   return (
     <section className="papp-section" aria-labelledby="p-clinic">
       <h2 id="p-clinic">{t('p.clinic')}</h2>
-      <div className={`pcard${full && c.cover_url ? ' clinic-card-cover' : ''}`}>
-        {full && c.cover_url && <img className="clinic-cover" src={c.cover_url} alt={t('p.clinicPhoto', { name: c.name })} loading="lazy" />}
-        {full && c.about && (
-          <div className="clinic-about">
-            {paragraphs(c.about).map((p, i) => (
-              <p key={i}>{p}</p>
-            ))}
-          </div>
-        )}
+      <div className="pcard">
         {doctors.length > 0 && (
           <ul className="doctors">
             {doctors.map((d) => (

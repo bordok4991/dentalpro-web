@@ -119,14 +119,17 @@ export function isVideoLink(url: string): boolean {
   }
 }
 
-/** Obrazovanje: jedna stavka po redu; godina (ili raspon) na početku reda ide posebno. */
-export function educationItems(text: string | null | undefined): { year: string | null; text: string }[] {
+/** Obrazovanje: jedna stavka po redu ("2014 — Naziv, ustanova"); godina i ustanova idu posebno. */
+export function educationItems(text: string | null | undefined): { year: string | null; title: string; detail: string | null }[] {
   return (text ?? '')
     .split('\n')
     .map((l) => l.trim())
     .filter(Boolean)
     .map((l) => {
       const m = l.match(/^((?:19|20)\d{2}(?:\s*[–-]\s*(?:(?:19|20)\d{2}|danas|today))?)\s*[—–:,.-]?\s+(.+)$/i);
-      return m ? { year: m[1], text: m[2] } : { year: null, text: l };
+      const year = m ? m[1] : null;
+      const rest = m ? m[2] : l;
+      const cut = rest.indexOf(', ');
+      return cut > 0 ? { year, title: rest.slice(0, cut), detail: rest.slice(cut + 2) } : { year, title: rest, detail: null };
     });
 }

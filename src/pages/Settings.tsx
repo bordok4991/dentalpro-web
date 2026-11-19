@@ -129,6 +129,18 @@ export function ProfileForm({ withPhoto = true }: { withPhoto?: boolean }) {
             value={education}
             onChange={(e) => setEducation(e.target.value)}
           />
+          <ImageUpload
+            label={t('settings.credentials')}
+            hint={t('settings.credentialsHint')}
+            url={profile?.credentials_url ?? null}
+            name={profile?.full_name || ''}
+            folder={`users/${user.id}`}
+            kind="cover"
+            onChange={async (url) => {
+              await api.updateProfile(user.id, { credentials_url: url });
+              await refresh();
+            }}
+          />
         </fieldset>
       )}
       <Button type="submit" busy={busy}>

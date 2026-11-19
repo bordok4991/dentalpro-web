@@ -438,7 +438,7 @@ export const bsMore = {
 
   'p.aboutTitle': 'O nama',
   'p.education': 'Obrazovanje i edukacije',
-  'p.clinicPhoto': 'Ordinacija {name}',
+  'p.credentialsPhoto': 'Diplome i certifikati: {name}',
   'settings.present': 'Predstavljanje pacijentima',
   'settings.presentLead': 'Pacijenti ovo vide u aplikaciji, na početnoj stranici pod "O nama".',
   'settings.bigPhoto': 'Veća slika',
@@ -446,11 +446,14 @@ export const bsMore = {
   'settings.bio': 'Kratko o meni',
   'settings.bioHint': 'Dvije-tri rečenice: čime se baviš i šta pacijent može očekivati.',
   'settings.education': 'Obrazovanje i edukacije',
-  'settings.educationHint': 'Jedna stavka po redu. Godina na početku reda prikazuje se posebno, npr. "2014 — Stomatološki fakultet".',
+  'settings.educationHint': 'Jedna stavka po redu: naziv, pa iza zareza ustanova. Godina na početku reda prikazuje se posebno, npr. "2014 — Stomatološki fakultet, Univerzitet u Sarajevu".',
   'settings.clinicAbout': 'O ordinaciji',
   'settings.clinicAboutHint': 'Nekoliko rečenica za pacijente: ko ste, šta radite, kako do vas.',
   'settings.cover': 'Slika ordinacije',
   'settings.coverHint': 'Prostor ili čekaonica, položena slika.',
+  'settings.credentials': 'Slika diploma i certifikata',
+  'settings.credentialsHint': 'Neobavezno. Prikazuje se uz obrazovanje i edukacije.',
+  'p.today': 'danas',
 };
 
 export type MoreDict = typeof bsMore;
@@ -890,7 +893,7 @@ export const enMore: MoreDict = {
 
   'p.aboutTitle': 'About us',
   'p.education': 'Education and training',
-  'p.clinicPhoto': '{name} practice',
+  'p.credentialsPhoto': 'Diplomas and certificates: {name}',
   'settings.present': 'How patients see you',
   'settings.presentLead': 'Patients see this in the app, on the home screen under "About us".',
   'settings.bigPhoto': 'Large photo',
@@ -903,6 +906,9 @@ export const enMore: MoreDict = {
   'settings.clinicAboutHint': 'A few sentences for patients: who you are, what you do, how to find you.',
   'settings.cover': 'Practice photo',
   'settings.coverHint': 'The practice or waiting room, landscape.',
+  'settings.credentials': 'Diplomas and certificates photo',
+  'settings.credentialsHint': 'Optional. Shown next to your education and training.',
+  'p.today': 'today',
 };
 
 /** Hrvatski: razlike u odnosu na bosanski. */

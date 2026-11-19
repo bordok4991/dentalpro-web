@@ -46,7 +46,7 @@ export function makeApi(sb: SupabaseClient) {
     async profile(userId: string): Promise<Profile | null> {
       const { data, error } = await sb
         .from('profiles')
-        .select('id, full_name, phone, email, locale, avatar_url, bio, education, photo_url')
+        .select('id, full_name, phone, email, locale, avatar_url, bio, education, photo_url, credentials_url')
         .eq('id', userId)
         .maybeSingle();
       if (error) throw error;
@@ -55,7 +55,7 @@ export function makeApi(sb: SupabaseClient) {
 
     async updateProfile(
       userId: string,
-      patch: Partial<Pick<Profile, 'full_name' | 'phone' | 'locale' | 'avatar_url' | 'bio' | 'education' | 'photo_url'>>,
+      patch: Partial<Pick<Profile, 'full_name' | 'phone' | 'locale' | 'avatar_url' | 'bio' | 'education' | 'photo_url' | 'credentials_url'>>,
     ) {
       const { error } = await sb.from('profiles').update(patch).eq('id', userId);
       if (error) throw error;

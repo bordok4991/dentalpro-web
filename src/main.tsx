@@ -2,6 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import '@fontsource-variable/albert-sans';
+import '@fontsource-variable/eb-garamond';
 import './styles.css';
 import { I18nProvider } from './lib/i18n';
 import { SessionProvider } from './lib/session';

@@ -52,6 +52,8 @@ export interface Profile {
   education: string | null;
   /** Veća slika za predstavljanje doktora */
   photo_url: string | null;
+  /** Slika diploma i certifikata, uz obrazovanje */
+  credentials_url: string | null;
 }
 
 export interface Membership {
@@ -316,6 +318,7 @@ export interface Doctor {
   bio: string | null;
   education: string | null;
   photo_url: string | null;
+  credentials_url: string | null;
 }
 
 export interface MyAppointment {

@@ -582,7 +582,7 @@ const ok = (name, cond, extra = '') => { cond ? pass++ : fail++; console.log(`  
   await page.getByLabel('Veća slika').setInputFiles(PNG);
   await page.locator('.present img.upload-cover').waitFor();
   await page.getByLabel('Kratko o meni').fill('Doktorica stomatologije. Redovno se usavršava.');
-  await page.getByLabel('Obrazovanje i edukacije').fill('2014 — Stomatološki fakultet\nKurs estetske stomatologije');
+  await page.getByLabel('Obrazovanje i edukacije').fill('2014 — Stomatološki fakultet, Univerzitet u Sarajevu\nKurs estetske stomatologije');
   await page.getByRole('button', { name: 'Sačuvaj profil' }).click();
   await waitText(page, 'Profil je sačuvan.');
   ok('doktor upisuje veću sliku, biografiju i obrazovanje', true);
@@ -760,11 +760,11 @@ const ok = (name, cond, extra = '') => { cond ? pass++ : fail++; console.log(`  
   await page.locator('.fin-owes', { hasText: '22,00 KM' }).waitFor();
   ok('pacijent vidi koliko mu je preostalo za platiti', (await page.locator('.plan-lines', { hasText: '50,00 KM' }).count()) === 1);
   await page.locator('.papp-tabs').getByRole('link', { name: 'Početna' }).click();
-  await page.locator('.doc-feature .doc-photo img').first().waitFor();
+  await page.locator('.story-hero img').first().waitFor();
   ok('pacijent vidi sliku doktora i logo ordinacije', (await page.locator('.papp-brand img').count()) === 1);
-  const about = page.locator('.doc-feature');
+  const about = page.locator('.story-doc');
   await about.waitFor();
-  ok('pacijent vidi doktora: veću sliku, biografiju i obrazovanje', (await about.locator('.doc-photo img').count()) === 1 && (await about.locator('.edu-year').innerText()) === '2014' && (await about.innerText()).includes('Kurs estetske stomatologije'));
+  ok('pacijent vidi doktora: veću sliku, biografiju i obrazovanje', (await about.locator('.story-hero img').count()) === 1 && (await about.locator('.cred-year').innerText()) === '2014' && (await about.locator('.cred-title').first().innerText()) === 'Stomatološki fakultet' && (await about.innerText()).includes('Kurs estetske stomatologije'));
   ok('pacijent vidi opis ordinacije', await has(page, 'Ordinacija u centru Sarajeva.'));
   await about.scrollIntoViewIfNeeded();
   await shot(page, '31b-o-nama');
