@@ -7,8 +7,10 @@ import type {
   Clinic,
   Doctor,
   MyAppointment,
+  MessageInput,
   MyTooth,
   Payment,
+  PatientMessage,
   PaymentInput,
   PlanInput,
   PlanItem,
@@ -570,6 +572,7 @@ export function makeApi(sb: SupabaseClient) {
         title: input.title.trim(),
         body: input.body.trim(),
         image_url: input.image_url || null,
+        video_url: input.video_url?.trim() || null,
         valid_until: input.kind === 'novost' ? input.valid_until || null : null,
         is_published: input.is_published,
       };
@@ -586,6 +589,52 @@ export function makeApi(sb: SupabaseClient) {
       const { data, error } = await sb.from('clinic_posts').delete().eq('id', id).select('id');
       if (error) throw error;
       if (!data || data.length === 0) throw new Error('NOT_ALLOWED');
+    },
+
+    // ---------- Lični savjeti i poruke doktora ----------
+
+    async messages(patientId: string): Promise<PatientMessage[]> {
+      const { data, error } = await sb
+        .from('patient_messages')
+        .select(MESSAGE_COLS)
+        .eq('patient_id', patientId)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as PatientMessage[];
+    },
+
+    async message(id: string): Promise<PatientMessage | null> {
+      const { data, error } = await sb.from('patient_messages').select(MESSAGE_COLS).eq('id', id).maybeSingle();
+      if (error) throw error;
+      return data as PatientMessage | null;
+    },
+
+    async sendMessage(clinicId: string, patientId: string, input: MessageInput): Promise<PatientMessage> {
+      const { data, error } = await sb
+        .from('patient_messages')
+        .insert({
+          clinic_id: clinicId,
+          patient_id: patientId,
+          kind: input.kind,
+          title: input.title.trim(),
+          body: input.body.trim(),
+          video_url: input.video_url?.trim() || null,
+        })
+        .select(MESSAGE_COLS)
+        .single();
+      if (error) throw error;
+      return data as PatientMessage;
+    },
+
+    async deleteMessage(id: string) {
+      const { data, error } = await sb.from('patient_messages').delete().eq('id', id).select('id');
+      if (error) throw error;
+      if (!data || data.length === 0) throw new Error('NOT_ALLOWED');
+    },
+
+    async markMessageRead(id: string) {
+      const { error } = await sb.rpc('mark_message_read', { p_id: id });
+      if (error) throw error;
     },
 
     // ---------- Pacijentski nalog ----------
@@ -780,7 +829,8 @@ const SERVICE_COLS = 'id, clinic_id, name, price, duration_min, is_active, onlin
 const ITEM_COLS = 'id, plan_id, service_id, tooth, description, unit_price, qty, position, done_at, created_at';
 const PLAN_COLS = `id, clinic_id, patient_id, title, note, discount_pct, valid_until, status, created_at, updated_at, sent_at, responded_at, responded_by, items:plan_items(${ITEM_COLS})`;
 const PAYMENT_COLS = 'id, clinic_id, patient_id, plan_id, amount, method, paid_on, note, created_by, created_at, voided_at, void_reason';
-const POST_COLS = 'id, clinic_id, kind, title, body, image_url, valid_until, is_published, published_at, created_by, created_at, updated_at';
+const POST_COLS = 'id, clinic_id, kind, title, body, image_url, video_url, valid_until, is_published, published_at, created_by, created_at, updated_at';
+const MESSAGE_COLS = 'id, clinic_id, patient_id, kind, title, body, video_url, created_by, created_at, read_at';
 
 function round2(n: number): number {
   return Math.round(n * 100) / 100;

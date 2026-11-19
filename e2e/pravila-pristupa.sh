@@ -221,9 +221,9 @@ D2="((current_date + 2) + time"
 TZ="at time zone 'Europe/Sarajevo'"
 admin "update appointments set status='otkazan' where patient_id='$PT1' and starts_at > '2030-01-01'" >/dev/null
 has "zakazivanje je isključeno dok ga vlasnik ne uključi" "$(as $P2 "select count(*) from available_slots('$CA','$DA',current_date + 2,30)")" "nije uključeno"
-as $OA "update clinics set online_booking=true, working_hours='{\"0\":[\"08:00\",\"16:00\"],\"1\":[\"08:00\",\"16:00\"],\"2\":[\"08:00\",\"16:00\"],\"3\":[\"08:00\",\"16:00\"],\"4\":[\"08:00\",\"16:00\"],\"5\":[\"08:00\",\"16:00\"],\"6\":[\"08:00\",\"12:00\"]}' where id='$CA'" >/dev/null
+as $OA "update clinics set online_booking=true, working_hours='{\"0\":[\"08:00\",\"16:00\"],\"1\":[\"08:00\",\"16:00\"],\"2\":[\"08:00\",\"16:00\"],\"3\":[\"08:00\",\"16:00\"],\"4\":[\"08:00\",\"16:00\"],\"5\":[\"08:00\",\"16:00\"],\"6\":[\"08:00\",\"16:00\"]}' where id='$CA'" >/dev/null
 SL=$(as $P2 "select count(*) from available_slots('$CA','$DA',current_date + 2,30)" | tail -1)
-SLX=$(admin "select case extract(dow from current_date + 2) when 6 then 8 else 16 end")
+SLX=16
 eq "slobodni termini u radnom vremenu (korak 30 min)" "$SL" "$SLX"
 eq "nema termina više od 90 dana unaprijed" "$(as $P2 "select count(*) from available_slots('$CA','$DA',current_date + 91,30)" | tail -1)" "0"
 has "recepcija nije doktor za online termine" "$(as $P2 "select count(*) from available_slots('$CA','$RA',current_date + 2,30)")" "ne radi u ovoj"
@@ -341,6 +341,29 @@ eq "pacijent postavlja svoju sliku profila" "$(up $P2 "users/$P2/avatar-abc123.j
 has "slika se ne postavlja u tuđi folder" "$(up $P2 "users/$DA/avatar-abc123.jpg")" "row-level security"
 has "fajl koji nije slika je odbijen" "$(up $P2 "users/$P2/skripta-abc123.html")" "row-level security"
 has "anonimni ne postavlja slike" "$(as anon "insert into storage.objects (bucket_id,name) values ('media','users/x/abcdefgh.jpg')")" "permission denied\|row-level security"
+
+echo "== Lični savjeti i video"
+msg() { as $1 "insert into patient_messages (clinic_id,patient_id,kind,title,body,video_url) values ('${4:-$CA}','${3:-$PT1}','savjet','$2','Tekst savjeta',${5:-null}) returning id" | sed -n 3p; }
+M1=$(msg $DA "Nakon vađenja" $PT1 $CA "'https://www.youtube.com/watch?v=abc123'")
+eq "doktor šalje lični savjet pacijentu" "$(admin "select created_by from patient_messages where id='$M1'")" "$DA"
+has "recepcija ne šalje lične savjete" "$(msg $RA "X")" "row-level security"
+eq "recepcija ne vidi lične savjete" "$(as $RA "select count(*) from patient_messages" | tail -1)" "0"
+eq "pacijent vidi svoj lični savjet" "$(as $P2 "select title from patient_messages" | tail -1)" "Nakon vađenja"
+eq "drugi pacijent ne vidi tuđi savjet" "$(as $P1 "select count(*) from patient_messages" | tail -1)" "0"
+eq "vlasnik B ne vidi savjete ordinacije A" "$(as $OB "select count(*) from patient_messages" | tail -1)" "0"
+eq "stranac ne vidi savjete" "$(as $OUT "select count(*) from patient_messages" | tail -1)" "0"
+has "pacijent ne mijenja poruku direktno" "$(as $P2 "update patient_messages set title='x' where id='$M1'")" "permission denied"
+has "drugi pacijent ne označava tuđu poruku" "$(as $P1 "select mark_message_read('$M1')")" "ne postoji"
+as $P2 "select mark_message_read('$M1')" >/dev/null
+eq "pacijent označava poruku pročitanom" "$(admin "select read_at is not null from patient_messages where id='$M1'")" "t"
+has "poslana poruka se ne mijenja ni u bazi" "$(admin "update patient_messages set title='Drugo' where id='$M1'")" "ne mijenja"
+has "video mora biti https link" "$(msg $DA "Y" $PT1 $CA "'javascript:alert(1)'")" "violates check"
+has "savjet za karton druge ordinacije je odbijen" "$(msg $DA "Z" $PTB $CA)" "ne pripada"
+has "objava ne prima video bez https" "$(as $DA "update clinic_posts set video_url='http://x.ba/v' where id='$PO1'")" "violates check"
+eq "objava prima video link" "$(as $DA "update clinic_posts set video_url='https://youtu.be/abc123' where id='$PO1' returning 1" | grep -c '^1$')" "1"
+M2=$(msg $DA "Za brisanje")
+eq "vlasnik povlači poslanu poruku" "$(as $OA "delete from patient_messages where id='$M2' returning 1" | grep -c '^1$')" "1"
+eq "lični savjeti su u audit logu" "$(admin "select count(*) > 0 from audit_log where table_name='patient_messages'")" "t"
 
 echo "== Ukidanje pristupa pacijentu"
 has "pacijent ne ukida tuđi pristup" "$(as $P1 "select unlink_patient_account('$PT1')")" "Nemate pravo"

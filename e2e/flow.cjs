@@ -13,6 +13,7 @@ const ok = (name, cond, extra = '') => { cond ? pass++ : fail++; console.log(`  
   async function newPage(viewport = { width: 390, height: 844 }) {
     const ctx = await browser.newContext({ viewport, deviceScaleFactor: 2, locale: 'bs-BA' });
     await ctx.grantPermissions(['clipboard-read', 'clipboard-write']);
+    await ctx.route('https://www.youtube-nocookie.com/**', (r) => r.fulfill({ status: 200, contentType: 'text/html', body: '<p>video</p>' }));
     const page = await ctx.newPage();
     page.on('console', (m) => { if (m.type() === 'error' && !/status of 4\d\d/.test(m.text())) errors.push(m.text()); });
     page.on('pageerror', (e) => errors.push(String(e)));
@@ -601,7 +602,40 @@ const ok = (name, cond, extra = '') => { cond ? pass++ : fail++; console.log(`  
   await page.getByRole('button', { name: 'Objavi' }).click();
   await waitText(page, 'Objavljeno.');
   ok('savjet iz predloška je objavljen', true);
+  await page.getByLabel('Link na video (neobavezno)').fill('http://youtube.com/watch?v=dQw4w9WgXcQ');
+  await page.getByRole('button', { name: 'Sačuvaj izmjene' }).click();
+  await waitText(page, 'Link na video mora počinjati s https://');
+  ok('video link bez https je odbijen', true);
+  await page.getByLabel('Link na video (neobavezno)').fill('https://youtu.be/dQw4w9WgXcQ');
+  await page.locator('.video iframe').waitFor();
+  ok('YouTube link se odmah prikazuje kao video', (await page.locator('.video iframe').getAttribute('src')) === 'https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ');
+  await page.getByRole('button', { name: 'Sačuvaj izmjene' }).click();
+  await waitText(page, 'Izmjene su objavljene.');
+  ok('savjet s videom je objavljen', true);
   await shot(page, '27-savjet');
+
+  await page.goto(kartonUrl);
+  const pmBlock = page.locator('section', { has: page.getByRole('heading', { name: 'Lični savjeti i poruke' }) });
+  await pmBlock.getByText('Ovom pacijentu još nisi poslao/la').waitFor();
+  await pmBlock.getByRole('button', { name: 'Pošalji savjet ili poruku' }).click();
+  await pmBlock.getByLabel('Kreni od gotovog savjeta (neobavezno)').selectOption({ label: 'Nakon vađenja zuba' });
+  ok('lični savjet se puni iz objavljenog savjeta (s videom)', (await pmBlock.getByLabel('Link na video (neobavezno)').inputValue()) === 'https://youtu.be/dQw4w9WgXcQ');
+  await pmBlock.getByLabel('Naslov').fill('Amra, nakon vađenja zuba 46');
+  await pmBlock.getByRole('button', { name: 'Pošalji pacijentu' }).click();
+  await waitText(page, 'Poslano. Pacijent ga vidi na početnoj stranici aplikacije.');
+  const pmRow = pmBlock.locator('.rowitem', { hasText: 'Amra, nakon vađenja zuba 46' });
+  ok('poslani savjet je u kartonu kao nepročitan', (await pmRow.innerText()).includes('Nije pročitano') && (await pmRow.innerText()).includes('s videom'));
+  await pmBlock.getByRole('button', { name: 'Pošalji savjet ili poruku' }).click();
+  await pmBlock.getByRole('button', { name: 'Poruka', exact: true }).click();
+  await pmBlock.getByLabel('Naslov').fill('Nalaz snimka');
+  await pmBlock.getByLabel('Tekst').fill('Snimak je uredan. Vidimo se na kontroli.');
+  await pmBlock.getByRole('button', { name: 'Pošalji pacijentu' }).click();
+  await pmBlock.locator('.rowitem', { hasText: 'Nalaz snimka' }).waitFor();
+  page.once('dialog', (d) => d.accept());
+  await pmBlock.locator('.rowitem', { hasText: 'Nalaz snimka' }).getByRole('button', { name: 'Povuci' }).click();
+  await page.waitForFunction(() => !document.body.innerText.includes('Nalaz snimka'));
+  ok('poruka se može povući', (await pmBlock.locator('.rowitem').count()) === 1);
+  await shot(page, '27b-licni-savjet');
 
   await page.goto(planUrl);
   await waitText(page, 'prihvaćen');
@@ -651,9 +685,32 @@ const ok = (name, cond, extra = '') => { cond ? pass++ : fail++; console.log(`  
   await shot(page, '28-finansije');
   await logout(page);
 
-  console.log('== Pacijent zakazuje online');
+  console.log('== Pacijent čita lični savjet');
   await login(page, 'amra@example.test');
   await waitText(page, 'Zdravo, Amra');
+  await waitText(page, 'Novi lični savjet za vas');
+  ok('početna javlja novi lični savjet', await has(page, 'Amra, nakon vađenja zuba 46'));
+  await shot(page, '28b-pacijent-novi-savjet');
+  await page.getByRole('link', { name: /Amra, nakon vađenja zuba 46/ }).click();
+  await page.waitForURL(/\/poruke\//);
+  await waitText(page, 'Ovu poruku vidite samo vi.');
+  ok('lični savjet ima video i tekst', (await page.locator('.article .video iframe').count()) === 1 && (await page.locator('.article p').count()) > 4);
+  await shot(page, '28c-pacijent-licni-savjet');
+  const patMsgs = await page.evaluate(async () => {
+    const k = Object.keys(localStorage).find((x) => x.endsWith('-auth-token'));
+    const tok = JSON.parse(localStorage.getItem(k)).access_token;
+    const r = await fetch('/rest/v1/patient_messages?select=id,read_at', { headers: { Authorization: 'Bearer ' + tok } });
+    return r.json();
+  });
+  ok('pacijent vidi samo svoj savjet', Array.isArray(patMsgs) && patMsgs.length === 1, JSON.stringify(patMsgs));
+  await page.getByRole('link', { name: 'Nazad na karton' }).click();
+  await page.locator('#poruke .post-card', { hasText: 'Amra, nakon vađenja zuba 46' }).waitFor();
+  ok('u kartonu je savjet označen pročitanim', (await page.locator('#poruke .msg-dot').count()) === 0);
+  await page.locator('.papp-tabs').getByRole('link', { name: 'Početna' }).click();
+  await waitText(page, 'Zakaži još jedan termin');
+  ok('pročitani savjet više nije na početnoj', !(await has(page, 'Novi lični savjet za vas')));
+
+  console.log('== Pacijent zakazuje online');
   await page.getByRole('link', { name: 'Zakaži još jedan termin' }).click();
   await waitText(page, 'Šta vam treba?');
   ok('za online su ponuđene samo usluge koje to dozvoljavaju', (await page.locator('.choice').count()) === 2 && !(await has(page, 'Izbjeljivanje')));
@@ -684,7 +741,7 @@ const ok = (name, cond, extra = '') => { cond ? pass++ : fail++; console.log(`  
   await page.getByRole('button', { name: 'Savjeti doktora' }).click();
   await page.getByRole('link', { name: /Nakon vađenja zuba/ }).click();
   await waitText(page, 'Prvih 24 sata ne ispirajte usta');
-  ok('pacijent čita savjet doktora', (await page.locator('.article p').count()) > 4);
+  ok('pacijent čita savjet doktora s videom', (await page.locator('.article p').count()) > 4 && (await page.locator('.article .video iframe').count()) === 1);
   await shot(page, '30-pacijent-savjet');
   await page.locator('.papp-tabs').getByRole('link', { name: 'Moj karton' }).click();
   await page.locator('.fin-owes', { hasText: '22,00 KM' }).waitFor();
@@ -699,6 +756,9 @@ const ok = (name, cond, extra = '') => { cond ? pass++ : fail++; console.log(`  
   await login(page, 'vlasnik@example.test');
   await waitText(page, 'Pacijenti su sami zakazali');
   ok('pregled prikazuje termin koji je pacijent sam zakazao', (await page.locator('.block-accent', { hasText: 'Pacijenti su sami zakazali' }).innerText()).includes('Kontrolni pregled'));
+  await page.goto(kartonUrl);
+  await page.locator('.rowitem', { hasText: 'Amra, nakon vađenja zuba 46' }).getByText(/^Pročitano /).waitFor();
+  ok('doktor vidi da je pacijent pročitao savjet', true);
   await logout(page);
 
   console.log('== Jezik, potvrda emaila, nova lozinka');

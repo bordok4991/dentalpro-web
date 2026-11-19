@@ -71,3 +71,43 @@ export function initials(name: string): string {
     .map((w) => w[0]!.toUpperCase())
     .join('');
 }
+
+/**
+ * Link za ugrađeni video: YouTube (bez kolačića za praćenje) ili Vimeo.
+ * Za druge adrese vraća null, pa se prikazuje običan link.
+ */
+export function videoEmbedUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  let u: URL;
+  try {
+    u = new URL(url.trim());
+  } catch {
+    return null;
+  }
+  if (u.protocol !== 'https:') return null;
+  const host = u.hostname.replace(/^www\.|^m\./, '');
+  let id: string | null = null;
+  if (host === 'youtu.be') id = u.pathname.slice(1);
+  else if (host === 'youtube.com' || host === 'youtube-nocookie.com') {
+    if (u.pathname === '/watch') id = u.searchParams.get('v');
+    else {
+      const m = u.pathname.match(/^\/(?:embed|shorts|live)\/([^/?#]+)/);
+      if (m) id = m[1];
+    }
+  }
+  if (id && /^[A-Za-z0-9_-]{6,20}$/.test(id)) return `https://www.youtube-nocookie.com/embed/${id}`;
+  if (host === 'vimeo.com' || host === 'player.vimeo.com') {
+    const m = u.pathname.match(/(\d{6,12})/);
+    if (m) return `https://player.vimeo.com/video/${m[1]}`;
+  }
+  return null;
+}
+
+/** Link na video mora biti https adresa. */
+export function isVideoLink(url: string): boolean {
+  try {
+    return new URL(url.trim()).protocol === 'https:';
+  } catch {
+    return false;
+  }
+}

@@ -20,6 +20,7 @@ import { ToothSelect } from '../components/ToothSelect';
 import { PatientAccess } from '../components/PatientAccess';
 import { PlansBlock } from './Plans';
 import { PatientFinance } from './Finances';
+import { PatientMessages } from '../components/PatientMessages';
 
 export function Karton() {
   const { id = '' } = useParams();
@@ -180,6 +181,7 @@ export function Karton() {
 
           <PlansBlock patient={patient} />
           <PatientFinance patient={patient} />
+          <PatientMessages patient={patient} />
 
           <section className="block">
             <div className="block-head">

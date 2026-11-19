@@ -9,6 +9,7 @@ import type { Balance, MyTooth, Payment, SurfaceKey, TreatmentPlan } from '../li
 import { Odontogram } from '../components/Odontogram';
 import { Button, Loading, Notice } from '../components/ui';
 import { NotLinked, usePatient } from './PatientApp';
+import { MessagesSection } from './PatientMessages';
 
 /** Moj karton: stanje zuba, planovi terapije i uplate. Samo za čitanje, osim odgovora na plan. */
 export function MyCard() {
@@ -61,6 +62,7 @@ export function MyCard() {
         )}
       </section>
 
+      <MessagesSection patientId={patient.id} />
       <PlansSection patientId={patient.id} />
       <PaymentsSection patientId={patient.id} />
     </>

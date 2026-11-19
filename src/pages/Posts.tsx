@@ -2,12 +2,13 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { todayIso, useI18n, type Key } from '../lib/i18n';
 import { errorKey } from '../lib/errors';
-import { placeholders } from '../lib/format';
+import { isVideoLink, placeholders } from '../lib/format';
 import { postTemplates } from '../lib/postTemplates';
 import { api, useSession } from '../lib/session';
 import type { Post, PostKind } from '../lib/types';
 import { Button, Field, Loading, Notice, TextField } from '../components/ui';
 import { ImageUpload } from '../components/ImageUpload';
+import { VideoEmbed } from '../components/VideoEmbed';
 
 const WRITERS = ['owner', 'doctor', 'specialist'];
 
@@ -134,6 +135,7 @@ export function PostEditor() {
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [image, setImage] = useState<string | null>(null);
+  const [video, setVideo] = useState('');
   const [validUntil, setValidUntil] = useState('');
   const [busy, setBusy] = useState<string | null>(null);
   const [msg, setMsg] = useState<{ kind: 'ok' | 'error'; key: Key; vars?: Record<string, string> } | null>(null);
@@ -160,6 +162,7 @@ export function PostEditor() {
           setTitle(p.title);
           setBody(p.body);
           setImage(p.image_url);
+          setVideo(p.video_url ?? '');
           setValidUntil(p.valid_until ?? '');
         }
       })
@@ -195,6 +198,7 @@ export function PostEditor() {
     if (!current) return;
     setMsg(null);
     if (!title.trim() || !body.trim()) return setMsg({ kind: 'error', key: 'err.postEmpty' });
+    if (video.trim() && !isVideoLink(video)) return setMsg({ kind: 'error', key: 'err.videoLink' });
     if (publish) {
       const open = [...placeholders(title), ...placeholders(body)];
       if (open.length) return setMsg({ kind: 'error', key: 'err.placeholders', vars: { list: [...new Set(open)].join(', ') } });
@@ -203,7 +207,7 @@ export function PostEditor() {
     try {
       const saved = await api.savePost(
         current.clinic.id,
-        { kind, title, body, image_url: image, valid_until: validUntil || null, is_published: publish },
+        { kind, title, body, image_url: image, video_url: video, valid_until: validUntil || null, is_published: publish },
         post?.id,
       );
       setPost(saved);
@@ -263,6 +267,17 @@ export function PostEditor() {
             </p>
           </div>
         )}
+        <Field
+          label={t('video.field')}
+          hint={t('video.hint')}
+          type="url"
+          inputMode="url"
+          placeholder="https://www.youtube.com/watch?v=…"
+          readOnly={!editable}
+          value={video}
+          onChange={(e) => setVideo(e.target.value)}
+        />
+        {video.trim() && isVideoLink(video) && <VideoEmbed url={video.trim()} title={title} />}
         {editable && (
           <ImageUpload
             label={t('posts.image')}

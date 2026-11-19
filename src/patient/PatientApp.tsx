@@ -10,6 +10,8 @@ import { Button, Loading, Notice } from '../components/ui';
 import { ProfileForm } from '../pages/Settings';
 import { Booking, MyAppointments, AppointmentCard } from './PatientBooking';
 import { MyCard } from './PatientCard';
+import { MessageView, UnreadMessages } from './PatientMessages';
+import { VideoEmbed } from '../components/VideoEmbed';
 
 interface PatientData {
   /** undefined dok se učitava; null kad nalog nije povezan s kartonom */
@@ -107,6 +109,7 @@ export function PatientApp() {
             <Route path="/moj-karton" element={<MyCard />} />
             <Route path="/novosti" element={<News />} />
             <Route path="/novosti/:id" element={<Article />} />
+            <Route path="/poruke/:id" element={<MessageView />} />
             <Route path="/profil" element={<Profile />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
@@ -213,6 +216,8 @@ function Home() {
           </Link>
         )}
       </section>
+
+      {patient && <UnreadMessages />}
 
       {plans.length > 0 && (
         <section className="papp-section">
@@ -410,6 +415,7 @@ function Article() {
         {post.published_at && date(post.published_at)}
         {post.valid_until && ` · ${t('p.validUntil', { date: date(post.valid_until) })}`}
       </p>
+      {post.video_url && <VideoEmbed url={post.video_url} title={post.title} />}
       {paragraphs(post.body).map((para, i) => (
         <p key={i}>{para}</p>
       ))}

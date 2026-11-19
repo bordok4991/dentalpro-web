@@ -270,6 +270,7 @@ export interface Post {
   title: string;
   body: string;
   image_url: string | null;
+  video_url: string | null;
   valid_until: string | null;
   is_published: boolean;
   published_at: string | null;
@@ -277,7 +278,23 @@ export interface Post {
   created_at: string;
   updated_at: string;
 }
-export type PostInput = Pick<Post, 'kind' | 'title' | 'body' | 'image_url' | 'valid_until' | 'is_published'>;
+export type PostInput = Pick<Post, 'kind' | 'title' | 'body' | 'image_url' | 'video_url' | 'valid_until' | 'is_published'>;
+
+// ---------- Lični savjeti i poruke doktora ----------
+export type MessageKind = 'savjet' | 'poruka';
+export interface PatientMessage {
+  id: string;
+  clinic_id: string;
+  patient_id: string;
+  kind: MessageKind;
+  title: string;
+  body: string;
+  video_url: string | null;
+  created_by: string | null;
+  created_at: string;
+  read_at: string | null;
+}
+export type MessageInput = Pick<PatientMessage, 'kind' | 'title' | 'body' | 'video_url'>;
 
 // ---------- Aplikacija za pacijente ----------
 export interface Doctor {
