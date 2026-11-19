@@ -53,6 +53,10 @@ export function minutesAt(time: string) {
   return h * 60 + m;
 }
 
+export function clockAtMinute(minute: number) {
+  return String(Math.floor(minute / 60)).padStart(2, '0') + ':' + String(minute % 60).padStart(2, '0');
+}
+
 export function validDuration(n: number) {
   return Number.isInteger(n) && n >= 5 && n <= 480;
 }

@@ -20,7 +20,8 @@ function inkOn(hex: string): string {
 export function Shell({ children }: { children: ReactNode }) {
   const { t } = useI18n();
   const { memberships, current, selectClinic, signOut, profile } = useSession();
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
+  const calendar = /^\/calendar\/?$/.test(pathname);
   const [more, setMore] = useState(false);
   useEffect(() => setMore(false), [pathname]);
   if (!current) return null;
@@ -51,8 +52,9 @@ export function Shell({ children }: { children: ReactNode }) {
   const moreActive = links.some((l) => !l.main && pathname.startsWith(l.to));
 
   return (
-    <div className="shell" style={brand}>
-      <header className="shell-side">
+    <div className={calendar ? 'shell shell-calendar' : 'shell'} style={brand}
+      data-wide={calendar && new URLSearchParams(search).get('sirina') === 'puna' || undefined}>
+      <header id="practice-menu" className="shell-side">
         {clinic.logo_url ? (
           <span className="shell-logo">
             <img src={clinic.logo_url} alt="" />

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useI18n, type Key } from '../lib/i18n';
 import { errorKey } from '../lib/errors';
 import { addDays, money } from '../lib/format';
@@ -170,6 +170,8 @@ export function Booking() {
   const { t, locale } = useI18n();
   const { current } = useSession();
   const { patient, doctors, reloadAppointments, preview } = usePatient();
+  const [params] = useSearchParams();
+  const preferred = params.get('doktor');
   const long = useLongDate();
   const [services, setServices] = useState<Service[] | null>(null);
   const [service, setService] = useState<Service | null>(null);
@@ -196,8 +198,9 @@ export function Booking() {
   }, [clinic?.id]);
 
   useEffect(() => {
-    if (doctors.length === 1) setDoctor(doctors[0]);
-  }, [doctors]);
+    const initial = doctors.find((d) => d.user_id === preferred) ?? (doctors.length === 1 ? doctors[0] : null);
+    setDoctor(initial);
+  }, [doctors, preferred]);
 
   // Radni dani u naredne četiri sedmice
   const days = useMemo(() => {

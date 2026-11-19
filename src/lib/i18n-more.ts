@@ -5,6 +5,9 @@
  */
 export const bsMore = {
   'cal.dayView': "Dan",
+  'cal.fullWidth': 'Puna širina',
+  'cal.restoreMenu': 'Vrati bočni meni',
+  'cal.chooseDay': 'Izaberi dan u sedmici',
   'cal.weekView': "Sedmica",
   'cal.monthView': "Mjeseci",
   'cal.views': "Prikaz kalendara",
@@ -478,6 +481,8 @@ export const bsMore = {
   'pv.profile': 'Ime, telefon, jezik i lozinku pacijent uređuje sam u svojoj aplikaciji.',
 
   'p.aboutTitle': 'O nama',
+  'p.trainingLink': 'Edukacije',
+  'p.credentialGallery': 'Diplome i certifikati',
   'p.careTeam': 'Naš tim',
   'p.viewCredentials': 'Pogledaj certifikate',
   'p.zoomPhoto': 'Uvećaj',
@@ -516,6 +521,9 @@ export type MoreDict = typeof bsMore;
 
 export const enMore: MoreDict = {
   'cal.dayView': "Day",
+  'cal.fullWidth': 'Full width',
+  'cal.restoreMenu': 'Show sidebar',
+  'cal.chooseDay': 'Choose a day this week',
   'cal.weekView': "Week",
   'cal.monthView': "Months",
   'cal.views': "Calendar view",
@@ -989,6 +997,8 @@ export const enMore: MoreDict = {
   'pv.profile': 'The patient edits their name, phone, language and password in their own app.',
 
   'p.aboutTitle': 'About us',
+  'p.trainingLink': 'Qualifications',
+  'p.credentialGallery': 'Diplomas and certificates',
   'p.careTeam': 'Our team',
   'p.viewCredentials': 'View certificates',
   'p.zoomPhoto': 'Zoom in',
@@ -1025,6 +1035,8 @@ export const enMore: MoreDict = {
 
 /** Hrvatski: razlike u odnosu na bosanski. */
 export const hrMore: Partial<MoreDict> = {
+  'cal.chooseDay': 'Odaberite dan u tjednu',
+  'cal.restoreMenu': 'Prikaži bočni izbornik',
   'cal.weekView': 'Tjedan',
   'cal.monthView': 'Mjeseci',
   'cal.confirmRelease': 'Potvrdi oslobađanje',

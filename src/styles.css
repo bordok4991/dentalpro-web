@@ -1292,7 +1292,7 @@ button {
   pointer-events: none;
 }
 
-.appt {
+.cal-col .appt {
   position: absolute;
   left: 4px;
   right: 4px;
@@ -1310,23 +1310,20 @@ button {
   cursor: pointer;
 }
 
-.appt strong,
-.appt span {
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+/* Čitljiv raspored informacija unutar trajanja termina. */
+.cal-event-lead { display: flex; align-items: baseline; gap: 5px; min-width: 0; }
+.cal-event-lead time { flex: none; font-weight: 600; font-size: .76rem; font-variant-numeric: tabular-nums; }
+.cal-event-lead strong, .cal-event-service, .cal-event-provider {
+  min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
 }
-
-.appt-short {
-  flex-direction: row;
-  align-items: center;
-  gap: 6px;
-  padding: 2px 8px;
-}
-
-.appt-status {
-  font-weight: 600;
-  opacity: 0.85;
+.cal-event-lead strong { font-weight: 700; }
+.cal-event-service { font-size: .82rem; }
+.cal-event-provider { font-size: .76rem; }
+.cal-col .appt-short { justify-content: center; padding: 0 5px; }
+.cal-col .appt-medium { gap: 0; justify-content: center; padding: 0 6px; line-height: 1.1; }
+.appt-roomy .cal-event-lead { flex-direction: column; align-items: stretch; gap: 1px; }
+.appt-roomy .cal-event-lead strong, .appt-roomy .cal-event-service {
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; white-space: normal; overflow-wrap: anywhere;
 }
 
 .appt[aria-pressed='true'] {
@@ -1630,9 +1627,6 @@ button {
     align-items: start;
   }
 
-  .cal-layout-open {
-    grid-template-columns: minmax(0, 1fr) 340px;
-  }
 }
 
 /* ============================================================
@@ -2988,232 +2982,137 @@ button {
   --serif: 'EB Garamond Variable', 'EB Garamond', Georgia, 'Times New Roman', serif;
 }
 
-.story {
-  display: grid;
-  gap: 40px;
-  margin-top: 8px;
+/* Profil ordinacije i galerija stručnih kvalifikacija. */
+.papp-main:has(> .about-edition) {
+  width: 100%; max-width: 1140px;
+  padding: clamp(16px, 2.6vw, 38px) clamp(14px, 3.2vw, 46px) calc(100px + env(safe-area-inset-bottom));
 }
-
-.story-doc {
-  display: grid;
-  gap: 22px;
-}
-
-/* Portret preko cijele širine, koji se pri dnu topi u podlogu */
-.story-hero {
-  margin: 0 -16px;
-}
-
-.story-hero img {
-  display: block;
-  width: 100%;
-  aspect-ratio: 4 / 5;
-  max-height: 660px;
-  object-fit: cover;
-  object-position: 50% 18%;
-  -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 62%, transparent 100%);
-  mask-image: linear-gradient(180deg, #000 0%, #000 62%, transparent 100%);
-}
-
-.story-name {
-  display: grid;
-  gap: 10px;
-}
-
-.story-doc-photo .story-name {
-  position: relative;
-  margin-top: -132px;
-}
-
-.story-name h2 {
-  display: grid;
-  margin: 0;
-  font-family: var(--serif);
-  font-weight: 600;
-  font-size: clamp(2.4rem, 11vw, 3.1rem);
-  line-height: 0.95;
-  letter-spacing: -0.02em;
-  color: var(--ink);
-}
-
-.story-name h2 span + span {
-  font-weight: 450;
-}
-
-.story-name p {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 0.9375rem;
-  font-weight: 600;
-  color: color-mix(in srgb, var(--brand) 82%, #000000);
-}
-
-.story-name p::before {
-  content: '';
-  width: 28px;
-  height: 1.5px;
-  background: var(--accent);
-}
-
-.story-bio {
-  display: grid;
-  gap: 12px;
-}
-
-.story-bio p {
-  font-family: var(--serif);
-  font-size: 1.3rem;
-  font-weight: 420;
-  line-height: 1.45;
-  color: color-mix(in srgb, var(--ink) 88%, var(--brand));
-}
-
-.story-cred {
-  display: grid;
-  gap: 18px;
-  margin-top: 6px;
-}
-
-.story-cred h3 {
-  margin: 0;
-  font-family: var(--serif);
-  font-size: 1.7rem;
-  font-weight: 550;
-  line-height: 1.05;
-  color: var(--ink);
-}
-
-.cred-preview {
-  display: grid;
-  gap: 8px;
-  width: 100%;
-  padding: 8px;
-  border: 1px solid color-mix(in srgb, var(--accent) 32%, var(--line));
-  border-radius: 14px;
-  background: linear-gradient(120deg, #fffaf4, var(--practice-ivory));
+.papp:has(.papp-main:not([hidden]) > .about-edition) .papp-top-inner { max-width: 1070px; }
+.about-edition {
+  --profile-dark: color-mix(in srgb, var(--brand) 15%, #211c19);
+  --profile-cream: #fff8ea;
+  --profile-paper: color-mix(in srgb, var(--accent) 9%, #faf7f2);
+  --profile-rule: color-mix(in srgb, var(--practice-espresso) 17%, #f6efe4);
   color: var(--practice-espresso);
-  font: inherit;
-  cursor: zoom-in;
 }
-
-.cred-preview img {
-  display: block;
-  width: 100%;
-  max-height: 26rem;
-  object-fit: contain;
-  border-radius: 7px;
+.about-mast { display: flex; align-items: center; gap: 18px; margin-bottom: clamp(14px, 2vw, 24px); }
+.about-mast h1 {
+  flex: none; margin: 0; font: 700 .78rem/1.3 var(--font); letter-spacing: .15em; text-transform: uppercase;
 }
-
-.cred-preview > span {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0 6px 2px;
-  font-size: .9rem;
-  font-weight: 600;
+.about-mast::after { content: ''; flex: 1; height: 1px; background: var(--profile-rule); }
+.about-mast a { order: 1; padding-block: 6px; color: var(--practice-bronze); font-size: .83rem; font-weight: 650; text-decoration: none; }
+.about-mast a span { margin-left: 4px; }
+.about-edition :is(a,button,summary):focus-visible { outline: 3px solid #22759a; outline-offset: 3px; }
+.about-edition :is(.story-cred,.practice-intro) { scroll-margin-top: 9rem; }
+.about-edition :is(.story-cred,.practice-intro):focus { outline: none; }
+.story { display: grid; gap: clamp(38px, 6vw, 74px); }
+.story-doc { display: grid; min-width: 0; gap: clamp(32px, 4.8vw, 64px); }
+.about-portrait {
+  display: grid; grid-template-areas: "copy"; min-width: 0; isolation: isolate; overflow: hidden;
+  border-radius: clamp(16px, 2.3vw, 28px);
+  color: var(--profile-cream);
+  background: radial-gradient(ellipse at 10% 95%, color-mix(in srgb, var(--brand) 18%, var(--profile-dark)), transparent 62%), var(--profile-dark);
 }
-
+.story-doc-photo .about-portrait { grid-template-areas: "photo" "copy"; }
+.story-hero { grid-area: photo; position: relative; min-width: 0; margin: 0; height: clamp(212px, 66vw, 372px); }
+.story-hero img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 50% 20%; }
+.story-hero::after {
+  position: absolute; content: ''; inset: auto 0 -1px; height: 26%; pointer-events: none;
+  background: linear-gradient(0deg, var(--profile-dark) 1%, transparent);
+}
+.about-profile-copy {
+  grid-area: copy; align-self: center; display: grid; align-content: center; justify-items: start; min-width: 0;
+  gap: clamp(16px, 2.4vw, 28px); padding: clamp(23px, 4.3vw, 64px);
+}
+.story-doc-photo .about-profile-copy { padding-top: clamp(12px, 3.2vw, 48px); }
+.story-name { min-width: 0; display: grid; gap: 12px; }
+.story-name p { display: flex; align-items: center; gap: 10px; color: #f0dbc0; font: 650 .75rem/1.5 var(--font); letter-spacing: .085em; text-transform: uppercase; }
+.story-name p::before { content: ''; flex: none; width: 23px; height: 1px; background: currentColor; opacity: .65; }
+.story-name h2 {
+  margin: 0; color: inherit; font: 480 clamp(2.45rem, 6.2vw, 4.65rem)/.99 var(--serif); letter-spacing: -.035em;
+  text-wrap: balance; overflow-wrap: anywhere;
+}
+.story-name h2 span { display: block; }
+.story-name h2 span + span { font-weight: 420; }
+.story-bio { display: grid; max-width: 45ch; gap: .85em; }
+.story-bio p { color: #f0e6d9; margin: 0; font: 420 clamp(.97rem, 1.2vw, 1.075rem)/1.62 var(--font); overflow-wrap: anywhere; }
+.about-profile-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 22px; }
+.about-book, .about-jump { display: inline-flex; align-items: center; justify-content: center; gap: 12px; min-height: 44px; font-weight: 650; font-size: .91rem; }
+.about-book { padding: 9px 17px; border-radius: 7px; background: var(--profile-cream); color: var(--profile-dark); text-decoration: none; }
+.about-book span { font-size: 1.05rem; }
+.about-jump { color: var(--profile-cream); text-decoration: underline; text-underline-offset: .32em; text-decoration-color: #b1a18c; }
+.about-jump span { display: inline-block; }
+.story-cred { min-width: 0; }
+.story-cred > h3, .about-team > h2, .practice-intro-copy h2 {
+  margin: 0; font: 490 clamp(1.85rem, 3.9vw, 2.95rem)/1.05 var(--serif); letter-spacing: -.025em; text-wrap: balance; overflow-wrap: anywhere;
+}
+.about-qualifications { display: grid; align-items: start; min-width: 0; gap: clamp(18px, 4vw, 46px); margin-top: clamp(16px, 2.3vw, 28px); }
+.cred-list { display: grid; min-width: 0; margin: 0; padding: 0; border-top: 1px solid var(--profile-rule); list-style: none; }
+.cred-list li { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: clamp(13px, 1.7vw, 21px) 0; border-bottom: 1px solid var(--profile-rule); }
+.cred-text { display: grid; min-width: 0; gap: 5px; overflow-wrap: anywhere; }
+.cred-title { font: 545 clamp(1.26rem, 2.1vw, 1.65rem)/1.16 var(--serif); }
+.cred-detail { font: 430 .92rem/1.5 var(--font); color: #645950; }
+.cred-year { flex: none; color: var(--practice-bronze); font: 600 .84rem/1.4 var(--font); font-variant-numeric: tabular-nums; }
+.about-gallery { min-width: 0; }
+.cred-preview {
+  position: relative; isolation: isolate; display: block; overflow: hidden; width: 100%; padding: 0; border: 0;
+  border-radius: 14px; background: var(--profile-dark); color: #fff8ed; cursor: zoom-in; font: inherit; text-align: left;
+}
+.cred-preview img { display: block; width: 100%; height: clamp(160px, 44vw, 270px); object-fit: cover; object-position: 50% 48%; }
+.cred-caption {
+  position: absolute; inset: auto 0 0; display: flex; justify-content: space-between; align-items: end; gap: 12px;
+  padding: 40px 18px 13px; background: linear-gradient(0deg, rgb(27 19 13 / .94), rgb(27 19 13 / .7) 50%, transparent);
+  color: #fff8eb; font: 620 .91rem/1.4 var(--font);
+}
+.cred-caption > span { font-size: 1.1rem; }
 .cred-dialog {
-  width: min(94vw, 62rem);
-  max-height: 94dvh;
-  padding: 16px;
-  box-sizing: border-box;
-  border: 0;
-  border-radius: 16px;
-  color: var(--ink);
-  background: var(--surface);
+  width: min(94vw, 64rem); max-height: 94dvh; padding: clamp(12px, 2.6vw, 24px);
+  border: 0; border-radius: 17px; background: #211c19; color: #fff8eb;
 }
-
-.cred-dialog[open] {
-  display: grid;
-  gap: 12px;
+.cred-dialog[open] { display: grid; gap: 12px; }
+.cred-dialog::backdrop { background: rgb(19 15 13 / .83); }
+.cred-dialog header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 20px; }
+.cred-dialog header h2 { font: 500 clamp(1.35rem, 2.8vw, 2rem)/1.1 var(--serif); }
+.cred-dialog header p { font-size: .85rem; margin-top: 4px; color: #e7d9c8; }
+.cred-dialog .btn { min-height: 44px; padding: 7px 12px; border: 1px solid #807466; background: #312a24; color: #fff8eb; box-shadow: none; }
+.cred-viewport { overflow: auto; min-width: 0; max-height: 66dvh; border-radius: 6px; background: #161310; overscroll-behavior: contain; }
+.cred-viewport img { display: block; width: 100%; height: auto; max-height: 66dvh; object-fit: contain; }
+.cred-viewport img.is-zoomed { width: 175%; min-width: 100%; max-width: none; max-height: none; }
+.cred-zoom { justify-self: end; }
+.about-team, .about-edition > .practice-intro { margin-top: clamp(30px, 5vw, 64px); }
+.about-mast + .practice-intro { margin-top: 0; }
+.about-team .doctors { margin-top: 16px; }
+.practice-intro {
+  display: grid; min-width: 0; overflow: hidden; border-top: 1px solid var(--profile-rule);
+  border-bottom: 1px solid var(--profile-rule); background: var(--profile-paper);
 }
+.about-practice-photo { width: 100%; height: clamp(135px, 34vw, 225px); object-fit: cover; object-position: 50% 49%; }
+.practice-intro-copy { display: grid; align-content: center; min-width: 0; gap: 10px; padding: clamp(20px, 3.6vw, 44px); }
+.practice-intro-copy h2 { font-size: clamp(1.65rem, 3.3vw, 2.45rem); }
+.practice-intro-copy p { max-width: 55ch; font-size: .98rem; line-height: 1.6; color: #574d43; overflow-wrap: anywhere; }
+.about-contact { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 5px; font-size: .9rem; font-style: normal; overflow-wrap: anywhere; }
+.about-contact a { color: var(--practice-bronze); font-weight: 650; text-underline-offset: .25em; }
 
-.cred-dialog::backdrop {
-  background: rgb(18 21 24 / .76);
+@media (min-width: 700px) {
+  .story-doc-photo .about-portrait { grid-template-columns: minmax(0, 1.04fr) minmax(0, 1fr); grid-template-areas: "copy photo"; min-height: clamp(405px, 45vw, 520px); }
+  .story-doc-photo .about-profile-copy { padding-block: clamp(30px, 4.4vw, 64px); }
+  .story-hero { height: auto; min-height: 100%; }
+  .story-hero img { position: absolute; inset: 0; object-position: 50% 26%; }
+  .story-hero::after { inset: 0 auto 0 -1px; width: 24%; height: 100%; background: linear-gradient(90deg, var(--profile-dark), transparent); }
+  .about-qualifications.has-gallery { grid-template-columns: minmax(0, 1.12fr) minmax(0, .88fr); }
+  .about-qualifications:not(.has-gallery) .about-gallery { max-width: 550px; }
+  .practice-intro.has-image { grid-template-columns: minmax(0, .65fr) minmax(0, 1.35fr); }
+  .about-practice-photo { height: 100%; min-height: 215px; max-height: 310px; }
 }
-
-.cred-dialog header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.cred-viewport {
-  overflow: auto;
-  min-width: 0;
-  max-height: 64dvh;
-  overscroll-behavior: contain;
-  background: var(--page);
-}
-
-.cred-viewport img {
-  display: block;
-  width: 100%;
-  max-height: 64dvh;
-  object-fit: contain;
-}
-
-.cred-viewport img.is-zoomed {
-  width: auto;
-  min-width: 100%;
-  max-width: none;
-  max-height: none;
-}
-
-.cred-zoom { justify-self: start; }
-
-.cred-list {
-  display: grid;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.cred-list li {
-  display: grid;
-  grid-template-columns: 26px 1fr auto;
-  align-items: start;
-  gap: 14px;
-  padding: 16px 0;
-  border-top: 1px solid color-mix(in srgb, var(--accent) 32%, var(--line));
-}
-
-.cred-list li:last-child {
-  border-bottom: 1px solid color-mix(in srgb, var(--accent) 32%, var(--line));
-}
-
-.cred-seal {
-  width: 26px;
-  height: 26px;
-  margin-top: 1px;
-  color: var(--accent);
-}
-
-.cred-text {
-  display: grid;
-  gap: 3px;
-}
-
-.cred-title {
-  font-weight: 650;
-  line-height: 1.3;
-}
-
-.cred-detail {
-  font-size: 0.9375rem;
-  color: var(--muted);
-  line-height: 1.4;
-}
-
-.cred-year {
-  font-family: var(--serif);
-  font-size: 1.25rem;
-  font-weight: 600;
-  line-height: 1.1;
-  color: color-mix(in srgb, var(--brand) 85%, #000000);
+@media (prefers-reduced-motion: no-preference) {
+  .about-book, .about-jump span, .cred-preview img { transition: transform .25s ease, background-color .2s ease; }
+  .cred-dialog[open] { animation: about-gallery-in .18s ease-out; }
+  @keyframes about-gallery-in { from { opacity: .1; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+  @media (hover: hover) {
+    .about-book:hover { background-color: #eee0c9; transform: translateY(-1px); }
+    .about-jump:hover span { transform: translateY(2px); }
+    .cred-preview:hover img { transform: scale(1.025); }
+  }
 }
 
 /* Fotografija recepcije i boje iz vizuelnog identiteta ordinacije. */
@@ -3358,41 +3257,6 @@ button {
   .practice-welcome h1 { max-width: none; }
 }
 
-/* Ordinacija na stranici O nama. */
-.practice-intro {
-  overflow: hidden;
-  border-radius: 16px;
-  border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--line));
-  background: var(--surface);
-}
-
-.practice-intro-cover {
-  display: block;
-  width: 100%;
-  aspect-ratio: 8 / 5;
-  object-fit: cover;
-  object-position: 50% 42%;
-  -webkit-mask-image: linear-gradient(#000 78%, rgb(0 0 0 / .82) 87%, transparent);
-  mask-image: linear-gradient(#000 78%, rgb(0 0 0 / .82) 87%, transparent);
-}
-
-.practice-intro-copy {
-  display: grid;
-  gap: 8px;
-  padding: 16px clamp(16px, 4vw, 24px) 20px;
-}
-
-.practice-intro-cover + .practice-intro-copy { padding-top: 0; }
-.practice-intro-copy h2 {
-  font: 550 clamp(1.55rem, 6vw, 2.1rem)/1.12 var(--serif);
-  text-wrap: balance;
-}
-
-.practice-intro-copy p {
-  line-height: 1.55;
-  overflow-wrap: anywhere;
-}
-
 .story-hours {
   display: grid;
   margin: 4px 0 0;
@@ -3441,27 +3305,6 @@ button {
   font-weight: 700;
   color: #3b2414;
   background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 35%, #ffffff), color-mix(in srgb, var(--accent) 70%, #ffffff));
-}
-
-@media (min-width: 560px) {
-  .story-hero {
-    margin: 0;
-  }
-
-  .story-hero img {
-    border-radius: 24px;
-  }
-}
-
-/* Fotografije uz usluge i kontakt ordinacije. */
-.papp-photo-story .story-hero img {
-  --portrait-fade: linear-gradient(to bottom, #000 47%, rgb(0 0 0 / .98) 55%, rgb(0 0 0 / .80) 65%, rgb(0 0 0 / .38) 77%, rgb(0 0 0 / .07) 89%, transparent 97%);
-  -webkit-mask-image: var(--portrait-fade);
-  mask-image: var(--portrait-fade);
-}
-
-.papp-photo-story .story-doc-photo .story-name {
-  margin-top: clamp(-6.5rem, -18vw, -4rem);
 }
 
 .practice-services {
@@ -3955,7 +3798,7 @@ button {
 .cal-filters select { max-width: 100%; padding: 6px; font: inherit; }
 .cal-board, .cal-inspector { min-width: 0; }
 .cal-scroll { max-height: min(76vh, 900px); overflow: auto; }
-.cal-week-grid { grid-template-columns: 48px repeat(7, minmax(84px, 1fr)); min-width: 636px; }
+.cal-week-grid { min-width: 0; }
 .cal-colhead { min-height: 46px; padding: 6px 8px; }
 .cal-colhead button { width: 100%; min-height: 32px; border: 0; background: transparent; color: inherit; font: inherit; font-weight: 650; cursor: pointer; }
 .cal-colhead[data-today='true'] { color: var(--brand); box-shadow: inset 0 -3px var(--brand); }
@@ -3974,7 +3817,7 @@ button {
 .cal-slot:hover, .cal-slot:focus-visible { color: var(--ink); background: #f4e8d1; }
 .cal-col .appt { z-index: 2; }
 .cal-col .appt:focus-visible, .cal-col .appt[aria-pressed='true'] { z-index: 3; }
-.cal-col .appt-block { color: #50341e; border-left: 3px solid #9d713f; background: repeating-linear-gradient(120deg, #f0e2cb 0 6px, #eadac0 6px 8px); }
+.appt-block { color: #50341e; border-left: 3px solid #9d713f; background: repeating-linear-gradient(120deg, #f0e2cb 0 6px, #eadac0 6px 8px); }
 .cal-times { position: sticky; left: 0; z-index: 3; margin: 0; background: var(--surface); }
 .cal-times span { transform: none; }
 .cal-corner { left: 0; z-index: 5; min-height: 46px; }
@@ -4007,7 +3850,7 @@ button {
 .settings-shortcuts { margin-top: 10px; gap: 10px 18px; }
 #trajanje-usluga, #radno-vrijeme { scroll-margin-top: 18px; }
 .present { min-inline-size: 0; }
-@media (max-width: 1050px) {
+@media (max-width: 1399px) {
   .cal-layout-open { grid-template-columns: minmax(0, 1fr); }
   .cal-layout-open .cal-inspector { grid-row: 1; }
 }
@@ -4016,4 +3859,66 @@ button {
   .cal-month { padding: 10px; }
   .cal-form-mode { width: 100%; }
   .cal-form-mode button { flex: 1; }
+}
+
+.shell-calendar .shell-main { width: 100%; max-width: none; min-width: 0; }
+.shell-calendar .cal-board { margin-top: 0; gap: 0; }
+.cal-width-toggle { display: none; }
+@media (min-width: 900px) {
+  .shell-calendar { grid-template-columns: clamp(176px, 13vw, 212px) minmax(0, 1fr); }
+  .shell-calendar .shell-main { padding: 28px clamp(16px, 1.7vw, 32px) 48px; }
+  .shell-calendar .shell-side { padding-inline: 15px; }
+}
+@media (min-width: 960px) {
+  .cal-width-toggle { display: inline-flex; }
+  .shell-calendar[data-wide] { grid-template-columns: minmax(0, 1fr); }
+  .shell-calendar[data-wide] > .shell-side { display: none; }
+}
+@media (min-width: 1400px) {
+  .cal-layout-open { grid-template-columns: minmax(0, 1fr) 320px; }
+}
+
+.cal-agenda { min-width: 0; }
+.cal-day-picker {
+  display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px; padding: 8px;
+  background: #faf7f2; border-bottom: 1px solid var(--line);
+}
+.cal-day-picker button {
+  display: grid; justify-items: center; align-content: center; gap: 2px; padding: 5px 0; min-height: 60px;
+  border: 1px solid transparent; border-radius: 9px; background: transparent; color: var(--ink); font: inherit; cursor: pointer;
+}
+.cal-day-picker button span { font-size: .73rem; text-transform: capitalize; }
+.cal-day-picker button strong { font-size: 1rem; line-height: 1.15; font-variant-numeric: tabular-nums; }
+.cal-day-picker i { display: block; width: 4px; height: 4px; border-radius: 50%; }
+.cal-day-picker [data-busy='true'] { background: currentColor; }
+.cal-day-picker [aria-current='date'] { border-color: var(--brand); }
+.cal-day-picker [aria-pressed='true'] { color: var(--brand-ink); background: var(--brand); }
+.cal-agenda-date { margin: 16px 14px 10px; font-size: 1.05rem; }
+.cal-agenda-date::first-letter { text-transform: uppercase; }
+.cal-agenda-empty { margin: 0 14px 18px; color: var(--muted); }
+.cal-agenda-list { display: grid; gap: 8px; margin: 0; padding: 0 12px 16px; list-style: none; }
+.cal-agenda-event {
+  display: grid; width: 100%; grid-template-columns: auto minmax(0, 1fr) auto; align-items: start;
+  gap: 13px; min-height: 54px; padding: 12px; border: 1px solid rgb(70 60 48 / 12%); border-radius: 10px;
+  font: inherit; text-align: left; cursor: pointer;
+}
+.cal-agenda-event.appt-block { background-color: #f0e3cc; }
+.cal-agenda-time { display: grid; gap: 3px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.35; }
+.cal-agenda-time small, .cal-agenda-copy small { font-size: .78rem; font-weight: 500; }
+.cal-agenda-copy { display: grid; gap: 3px; overflow-wrap: anywhere; font-size: .92rem; line-height: 1.35; }
+.cal-agenda-copy strong { font-size: 1rem; }
+.cal-agenda-chevron { align-self: center; font-size: 1.2rem; }
+.cal-agenda-slots { margin: 0 14px 12px; border-top: 1px solid var(--line); }
+.cal-agenda-slots summary { padding: 12px 0 4px; min-height: 44px; font-weight: 650; cursor: pointer; }
+.cal-agenda-slots summary span { color: var(--muted); font-size: .82rem; font-weight: 500; }
+.cal-agenda-slot-body { display: grid; gap: 8px; padding: 4px 0 8px; }
+.cal-agenda-slots .cal-slot-list button { min-height: 44px; }
+@media (max-width: 959px) {
+  .cal-grid-empty { display: none; }
+  .shell-calendar .cal-inspector { scroll-margin-top: 88px; }
+}
+@media (max-width: 480px) {
+  .shell-calendar .shell-main { padding-inline: 12px; }
+  .cal-navigation { flex-wrap: wrap; }
+  .cal-pick input { min-width: 0; max-width: 100%; }
 }

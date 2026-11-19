@@ -33,6 +33,7 @@ export function Calendar() {
   const view: CalendarView = requestedView === 'dan' || requestedView === 'mjeseci' ? requestedView : 'sedmica';
   const { from, to } = calendarRange(day, view);
   const preselect = params.get('pacijent');
+  const wide = params.get('sirina') === 'puna';
   const clinicId = current?.clinic.id ?? '';
   const [doctors, setDoctors] = useState<CalendarDoctor[] | null>(null);
   const [services, setServices] = useState<Service[]>([]);
@@ -94,7 +95,7 @@ export function Calendar() {
   }, [preselect, doctors]);
 
   useEffect(() => {
-    if ((form || selectedId) && window.matchMedia('(max-width: 1050px)').matches) side.current?.scrollIntoView({ block: 'start' });
+    if ((form || selectedId) && window.matchMedia('(max-width: 1399px)').matches) side.current?.scrollIntoView({ block: 'start' });
   }, [form, selectedId]);
 
   function navigate(d: string, mode = view) {
@@ -153,9 +154,16 @@ export function Calendar() {
           <label className="cal-pick"><span className="sr-only">{t('cal.pickDate')}</span>
             <input type="date" value={day} onChange={(e) => validDay(e.target.value) && navigate(e.target.value)} /></label>
         </div>
-        <div className="cal-views" role="group" aria-label={t('cal.views')}>
+        <div className="row cal-display-controls"><div className="cal-views" role="group" aria-label={t('cal.views')}>
           {(['dan', 'sedmica', 'mjeseci'] as const).map((mode) => <button key={mode} type="button" aria-pressed={mode === view}
             onClick={() => navigate(day, mode)}>{t(mode === 'dan' ? 'cal.dayView' : mode === 'sedmica' ? 'cal.weekView' : 'cal.monthView')}</button>)}
+        </div>
+          <button type="button" className="btn btn-quiet cal-width-toggle" aria-controls="practice-menu" aria-expanded={!wide}
+            onClick={() => {
+              const next = new URLSearchParams(params);
+              if (wide) next.delete('sirina'); else next.set('sirina', 'puna');
+              setParams(next, { replace: true, preventScrollReset: true });
+            }}>{t(wide ? 'cal.restoreMenu' : 'cal.fullWidth')}</button>
         </div>
       </div>
       <div className="cal-bar cal-filters">
@@ -177,11 +185,11 @@ export function Calendar() {
     <div className={'cal-layout' + (form || selected ? ' cal-layout-open' : '')}>
       <section className="block cal-board" aria-label={title}>
         {loadError ? <Notice kind="error">{t(loadError)} <button type="button" className="link-btn" onClick={() => setRevision((v) => v + 1)}>{t('common.retry')}</button></Notice> : !appts || !doctors ? <Loading /> : <>
-          <CalendarBoard view={view} from={from} today={today} zone={zone} doctors={providers.filter((d) => !filter || d.id === filter)}
+          <CalendarBoard clinicId={clinicId} view={view} day={day} from={from} today={today} zone={zone} doctors={providers.filter((d) => !filter || d.id === filter)}
             events={visible} workingHours={current.clinic.working_hours ?? {}} selected={selectedId}
-            onNew={(d, time, doctor) => newForm(d, time, doctor)} onDay={(d) => navigate(d, 'dan')}
+            onNew={(d, time, doctor) => newForm(d, time, doctor)} onNavigate={navigate}
             onOpen={(id) => { setForm(null); setSelectedId(id); }}/>
-          <p className="muted cal-footer">{!visible.length && <span>{t('cal.rangeEmpty')}</span>}<span>{t('cal.zone', { zone })}</span></p>
+          <p className="muted cal-footer">{!visible.length && <span className={view === 'mjeseci' ? undefined : 'cal-grid-empty'}>{t('cal.rangeEmpty')}</span>}<span>{t('cal.zone', { zone })}</span></p>
         </>}
       </section>
       {(form || selected) && <div className="cal-inspector" ref={side}>

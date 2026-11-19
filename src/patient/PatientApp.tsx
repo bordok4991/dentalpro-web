@@ -138,7 +138,7 @@ export function PatientApp({ previewId }: { previewId?: string }) {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/cjenovnik" element={<PatientPriceList key={c.id} />} />
-            <Route path="/o-nama" element={<AboutPractice doctors={doctors} />} />
+            <Route path="/o-nama" element={patient === undefined ? <Loading /> : <AboutPractice doctors={doctors} canBook={!!patient && c.online_booking} />} />
             <Route path="/termini" element={<MyAppointments />} />
             <Route path="/zakazi" element={<Booking />} />
             <Route path="/moj-karton" element={<MyCard />} />
