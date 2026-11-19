@@ -2308,6 +2308,59 @@ button {
   background: var(--page);
 }
 
+/* Pregled "kao pacijent" (osoblje) */
+.papp-preview .papp-sticky {
+  position: sticky;
+  top: 0;
+  z-index: 7;
+}
+
+.papp-preview .papp-top {
+  position: static;
+}
+
+.pv-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: calc(8px + env(safe-area-inset-top)) 16px 8px;
+  background: #10243a;
+  color: #fff;
+  font-size: 0.875rem;
+}
+
+.pv-bar > span {
+  display: grid;
+  gap: 2px;
+}
+
+.pv-bar > span > span {
+  opacity: 0.85;
+}
+
+.pv-bar button {
+  flex: none;
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 999px;
+  background: transparent;
+  color: #fff;
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.pv-bar button:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 2px;
+}
+
+.papp-top {
+  top: 56px;
+}
+
 .papp-top {
   position: sticky;
   top: 0;

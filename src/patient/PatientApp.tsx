@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
-import { Link, Navigate, NavLink, Route, Routes, useParams, useSearchParams } from 'react-router-dom';
-import { useI18n, type Key } from '../lib/i18n';
+import { Link, Navigate, NavLink, Route, Routes, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { todayIso, useI18n, type Key } from '../lib/i18n';
 import { errorKey } from '../lib/errors';
 import { paragraphs } from '../lib/format';
 import { api, useSession } from '../lib/session';
@@ -12,6 +12,7 @@ import { Booking, MyAppointments, AppointmentCard } from './PatientBooking';
 import { MyCard } from './PatientCard';
 import { MessageView, UnreadMessages } from './PatientMessages';
 import { VideoEmbed } from '../components/VideoEmbed';
+import { ExitPreview } from './PreviewSwitch';
 
 interface PatientData {
   /** undefined dok se učitava; null kad nalog nije povezan s kartonom */
@@ -19,6 +20,8 @@ interface PatientData {
   doctors: Doctor[];
   appointments: MyAppointment[] | null;
   reloadAppointments: () => Promise<void>;
+  /** Osoblje gleda aplikaciju kao ovaj pacijent: samo za gledanje, ništa se ne mijenja. */
+  preview: boolean;
 }
 
 const Ctx = createContext<PatientData | null>(null);
@@ -41,10 +44,19 @@ function inkOn(hex: string): string {
   return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.4 ? '#10243A' : '#FFFFFF';
 }
 
+/** Objave koje pacijent vidi: osoblje vidi i istekle, pa ih pregled sakrije. */
+export function forPatient(posts: Post[], preview: boolean): Post[] {
+  if (!preview) return posts;
+  const today = todayIso();
+  return posts.filter((p) => p.is_published && (!p.valid_until || p.valid_until >= today));
+}
+
 /** Aplikacija za pacijente: prilagođena telefonu, u bojama ordinacije. */
-export function PatientApp() {
+export function PatientApp({ previewId }: { previewId?: string }) {
   const { t } = useI18n();
   const { current, user } = useSession();
+  const navigate = useNavigate();
+  const preview = !!previewId;
   const [patient, setPatient] = useState<Patient | null | undefined>(undefined);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [appointments, setAppointments] = useState<MyAppointment[] | null>(null);
@@ -53,17 +65,17 @@ export function PatientApp() {
   const reloadAppointments = useCallback(async () => {
     if (!clinicId) return;
     try {
-      setAppointments(await api.myAppointments(clinicId));
+      setAppointments(previewId ? await api.appointmentsAsPatient(previewId) : await api.myAppointments(clinicId));
     } catch {
       setAppointments([]);
     }
-  }, [clinicId]);
+  }, [clinicId, previewId]);
 
   useEffect(() => {
     if (!clinicId || !user) return;
     let alive = true;
     setPatient(undefined);
-    Promise.all([api.myPatient(clinicId, user.id), api.clinicDoctors(clinicId)])
+    Promise.all([previewId ? api.patient(previewId) : api.myPatient(clinicId, user.id), api.clinicDoctors(clinicId)])
       .then(([p, d]) => {
         if (!alive) return;
         setPatient(p);
@@ -74,9 +86,9 @@ export function PatientApp() {
     return () => {
       alive = false;
     };
-  }, [clinicId, user, reloadAppointments]);
+  }, [clinicId, user, previewId, reloadAppointments]);
 
-  const value = useMemo(() => ({ patient, doctors, appointments, reloadAppointments }), [patient, doctors, appointments, reloadAppointments]);
+  const value = useMemo(() => ({ patient, doctors, appointments, reloadAppointments, preview }), [patient, doctors, appointments, reloadAppointments, preview]);
   if (!current) return null;
   const c = current.clinic;
   const brand = { '--brand': c.primary_color, '--brand-ink': inkOn(c.primary_color), '--accent': c.accent_color } as CSSProperties;
@@ -91,16 +103,29 @@ export function PatientApp() {
 
   return (
     <Ctx.Provider value={value}>
-      <div className="papp" style={brand}>
-        <header className="papp-top">
-          <Link to="/" className="papp-brand">
-            <Avatar url={c.logo_url} name={c.name} size={40} square />
-            <span>
-              <strong>{c.name}</strong>
-              {c.doctor_name && <span>{c.doctor_name}</span>}
-            </span>
-          </Link>
-        </header>
+      <div className={`papp${previewId ? ' papp-preview' : ''}`} style={brand}>
+        <div className="papp-sticky">
+          {previewId && (
+            <div className="pv-bar" role="status">
+              <span>
+                <strong>{t('pv.banner', { name: patient ? `${patient.first_name} ${patient.last_name}` : '…' })}</strong>
+                <span>{t('pv.readOnly')}</span>
+              </span>
+              <button type="button" onClick={() => navigate(`/patients/${previewId}`)}>
+                {t('pv.exit')}
+              </button>
+            </div>
+          )}
+          <header className="papp-top">
+            <Link to="/" className="papp-brand">
+              <Avatar url={c.logo_url} name={c.name} size={40} square />
+              <span>
+                <strong>{c.name}</strong>
+                {c.doctor_name && <span>{c.doctor_name}</span>}
+              </span>
+            </Link>
+          </header>
+        </div>
         <main className="papp-main">
           <Routes>
             <Route path="/" element={<Home />} />
@@ -111,6 +136,8 @@ export function PatientApp() {
             <Route path="/novosti/:id" element={<Article />} />
             <Route path="/poruke/:id" element={<MessageView />} />
             <Route path="/profil" element={<Profile />} />
+            <Route path="/kao-pacijent/:id" element={<Navigate to="/" replace />} />
+            {previewId && <Route path="/patients/:id" element={<ExitPreview />} />}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>
@@ -146,7 +173,7 @@ export function NotLinked() {
 function Home() {
   const { t } = useI18n();
   const { current, profile } = useSession();
-  const { patient, appointments, doctors } = usePatient();
+  const { patient, appointments, doctors, preview } = usePatient();
   const [plans, setPlans] = useState<TreatmentPlan[]>([]);
   const [posts, setPosts] = useState<Post[] | null>(null);
   const clinicId = current?.clinic.id;
@@ -156,12 +183,12 @@ function Home() {
     let alive = true;
     api
       .posts(clinicId, { publishedOnly: true })
-      .then((p) => alive && setPosts(p.slice(0, 3)))
+      .then((p) => alive && setPosts(forPatient(p, preview).slice(0, 3)))
       .catch(() => alive && setPosts([]));
     return () => {
       alive = false;
     };
-  }, [clinicId]);
+  }, [clinicId, preview]);
 
   useEffect(() => {
     if (!patient) return;
@@ -331,6 +358,7 @@ function News() {
   const { t } = useI18n();
   const { current } = useSession();
   const [params, setParams] = useSearchParams();
+  const { preview } = usePatient();
   const kind: PostKind = params.get('vrsta') === 'savjet' ? 'savjet' : 'novost';
   const [list, setList] = useState<Post[] | null>(null);
   const [error, setError] = useState<Key | null>(null);
@@ -342,12 +370,12 @@ function News() {
     setList(null);
     api
       .posts(clinicId, { kind, publishedOnly: true })
-      .then((p) => alive && setList(p))
+      .then((p) => alive && setList(forPatient(p, preview)))
       .catch((e) => alive && (setError(errorKey(e)), setList([])));
     return () => {
       alive = false;
     };
-  }, [clinicId, kind]);
+  }, [clinicId, kind, preview]);
 
   return (
     <>
@@ -430,7 +458,7 @@ interface InstallEvent extends Event {
 function Profile() {
   const { t } = useI18n();
   const { signOut, memberships, current, selectClinic } = useSession();
-  const { doctors } = usePatient();
+  const { doctors, preview } = usePatient();
   const [install, setInstall] = useState<InstallEvent | null>(null);
   const standalone = typeof window !== 'undefined' && window.matchMedia?.('(display-mode: standalone)').matches;
 
@@ -446,8 +474,8 @@ function Profile() {
   return (
     <>
       <h1>{t('p.profileTitle')}</h1>
-      <ProfileForm withPhoto={false} />
-      {memberships && memberships.length > 1 && current && (
+      {preview ? <Notice kind="info">{t('pv.profile')}</Notice> : <ProfileForm withPhoto={false} />}
+      {!preview && memberships && memberships.length > 1 && current && (
         <section className="block">
           <h2>{t('nav.clinic')}</h2>
           <select aria-label={t('nav.clinic')} value={current.clinic.id} onChange={(e) => selectClinic(e.target.value)}>
@@ -477,11 +505,13 @@ function Profile() {
         <p className="muted">{t('p.privacy')}</p>
       </section>
       <ClinicCard doctors={doctors} />
-      <p className="papp-logout">
-        <Button variant="quiet" onClick={() => void signOut()}>
-          {t('nav.logout')}
-        </Button>
-      </p>
+      {!preview && (
+        <p className="papp-logout">
+          <Button variant="quiet" onClick={() => void signOut()}>
+            {t('nav.logout')}
+          </Button>
+        </p>
+      )}
     </>
   );
 }
@@ -526,4 +556,3 @@ function IconUser() {
     </svg>
   );
 }
-

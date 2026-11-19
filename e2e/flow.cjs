@@ -2,6 +2,8 @@
 const { chromium } = require('playwright');
 const path = require('path');
 const BASE = 'http://localhost:54321';
+const { execSync } = require('child_process');
+const psql = async (q) => execSync('su postgres -c "psql -X -q -t -A -d dp_test"', { input: q }).toString();
 const SHOTS = path.join(__dirname, 'shots');
 
 let pass = 0, fail = 0;
@@ -759,6 +761,37 @@ const ok = (name, cond, extra = '') => { cond ? pass++ : fail++; console.log(`  
   await page.goto(kartonUrl);
   await page.locator('.rowitem', { hasText: 'Amra, nakon vađenja zuba 46' }).getByText(/^Pročitano /).waitFor();
   ok('doktor vidi da je pacijent pročitao savjet', true);
+
+  console.log('== Pogledaj kao pacijent');
+  await page.getByRole('link', { name: 'Pogledaj kao pacijent' }).click();
+  await waitText(page, 'Gledaš kao pacijent: Amra Begić');
+  await waitText(page, 'Zdravo, Amra');
+  ok('vlasnik vidi aplikaciju pacijenta bez drugog naloga', (await page.locator('.papp-tabs a').count()) === 5 && (await page.locator('.shell').count()) === 0);
+  await page.locator('.appt-card-next', { hasText: 'Kompozitni ispun 36' }).waitFor();
+  ok('pregled prikazuje termine pacijenta', true);
+  await shot(page, '32-kao-pacijent');
+  const apptCount = async () => Number((await psql("select count(*) from appointments")).trim());
+  const before = await apptCount();
+  await page.getByRole('link', { name: 'Zakaži još jedan termin' }).click();
+  await page.getByRole('radio', { name: /Kontrolni pregled/ }).click();
+  await page.locator('.day-chip').nth(2).click();
+  await page.locator('.slot').first().click();
+  await page.getByRole('button', { name: 'Potvrdi termin' }).click();
+  await waitText(page, 'U pregledu se ništa ne mijenja.');
+  ok('u pregledu se termin ne može zakazati', (await apptCount()) === before);
+  await page.locator('.papp-tabs').getByRole('link', { name: 'Moj karton' }).click();
+  await page.locator('.plan-card', { hasText: 'Sanacija zuba' }).waitFor();
+  ok('pregled prikazuje zube, planove i lične savjete', (await page.getByRole('button', { name: /^Zub 46: Implantat/ }).count()) === 1 && (await page.locator('#poruke .post-card').count()) === 1);
+  await page.locator('.papp-tabs').getByRole('link', { name: 'Profil' }).click();
+  await waitText(page, 'pacijent uređuje sam');
+  ok('u pregledu nema uređivanja profila ni odjave', (await page.getByRole('button', { name: 'Odjavi se' }).count()) === 0 && (await page.getByLabel('Ime i prezime').count()) === 0);
+  await page.reload();
+  await waitText(page, 'Gledaš kao pacijent: Amra Begić');
+  ok('pregled ostaje nakon osvježavanja stranice', true);
+  await page.getByRole('button', { name: 'Izađi' }).click();
+  await page.waitForURL(/\/patients\//);
+  await page.getByRole('link', { name: 'Pogledaj kao pacijent' }).waitFor();
+  ok('izlaz vraća u karton, u panel ordinacije', (await page.locator('.shell').count()) === 1);
   await logout(page);
 
   console.log('== Jezik, potvrda emaila, nova lozinka');

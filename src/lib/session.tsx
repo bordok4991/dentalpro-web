@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { patientPreview } from '../patient/preview';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 import { makeApi } from './api';
@@ -122,6 +123,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = useCallback(async () => {
+    patientPreview.set(null);
     pendingInvite.clear();
     await supabase.auth.signOut();
   }, []);

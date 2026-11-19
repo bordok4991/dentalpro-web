@@ -15,7 +15,7 @@ import { MessagesSection } from './PatientMessages';
 export function MyCard() {
   const { t } = useI18n();
   const { current } = useSession();
-  const { patient } = usePatient();
+  const { patient, preview } = usePatient();
   const [teeth, setTeeth] = useState<Map<number, MyTooth> | null>(null);
   const [tooth, setTooth] = useState<number | null>(null);
   const clinicId = current?.clinic.id;
@@ -23,14 +23,13 @@ export function MyCard() {
   useEffect(() => {
     if (!clinicId || !patient) return;
     let alive = true;
-    api
-      .myTeeth(clinicId)
-      .then((ts) => alive && setTeeth(new Map(ts.map((x) => [x.tooth, x]))))
+    (preview ? api.teeth(patient.id) : api.myTeeth(clinicId))
+      .then((ts: MyTooth[]) => alive && setTeeth(new Map(ts.map((x) => [x.tooth, { tooth: x.tooth, condition: x.condition, endo: x.endo, surfaces: x.surfaces }]))))
       .catch(() => alive && setTeeth(new Map()));
     return () => {
       alive = false;
     };
-  }, [clinicId, patient]);
+  }, [clinicId, patient, preview]);
 
   if (patient === undefined) return <Loading />;
   if (patient === null) {
@@ -102,13 +101,14 @@ function PlansSection({ patientId }: { patientId: string }) {
   const [error, setError] = useState<Key | null>(null);
   const [asking, setAsking] = useState<{ id: string; accept: boolean } | null>(null);
   const [busy, setBusy] = useState(false);
+  const { preview } = usePatient();
   const currency = current?.clinic.currency ?? 'KM';
 
   useEffect(() => {
     let alive = true;
     api
       .plans(patientId)
-      .then((p) => alive && setPlans(p))
+      .then((p) => alive && setPlans(p.filter((x) => x.status !== 'nacrt')))
       .catch((e) => alive && (setError(errorKey(e)), setPlans([])));
     return () => {
       alive = false;
@@ -121,11 +121,15 @@ function PlansSection({ patientId }: { patientId: string }) {
 
   async function respond() {
     if (!asking) return;
+    if (preview) {
+      setAsking(null);
+      return setError('pv.noAction');
+    }
     setError(null);
     setBusy(true);
     try {
       await api.respondPlan(asking.id, asking.accept);
-      setPlans(await api.plans(patientId));
+      setPlans((await api.plans(patientId)).filter((x) => x.status !== 'nacrt'));
       setAsking(null);
     } catch (e) {
       setError(errorKey(e));
@@ -221,7 +225,7 @@ function PaymentsSection({ patientId }: { patientId: string }) {
       .then(([b, p]) => {
         if (!alive) return;
         setBal(b);
-        setList(p);
+        setList(p.filter((x) => !x.voided_at));
       })
       .catch(() => alive && setBal(null));
     return () => {

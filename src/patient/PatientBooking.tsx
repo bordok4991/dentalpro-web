@@ -24,7 +24,7 @@ export function useLongDate() {
 export function AppointmentCard({ appt, highlight }: { appt: MyAppointment; highlight?: boolean }) {
   const { t } = useI18n();
   const { current } = useSession();
-  const { reloadAppointments } = usePatient();
+  const { reloadAppointments, preview } = usePatient();
   const long = useLongDate();
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<Key | null>(null);
@@ -36,6 +36,10 @@ export function AppointmentCard({ appt, highlight }: { appt: MyAppointment; high
   const phone = current?.clinic.phone;
 
   async function run(kind: 'confirm' | 'cancel') {
+    if (preview) {
+      setAsking(false);
+      return setError('pv.noAction');
+    }
     setError(null);
     setBusy(kind);
     try {
@@ -160,7 +164,7 @@ export function MyAppointments() {
 export function Booking() {
   const { t, locale } = useI18n();
   const { current } = useSession();
-  const { patient, doctors, reloadAppointments } = usePatient();
+  const { patient, doctors, reloadAppointments, preview } = usePatient();
   const long = useLongDate();
   const [services, setServices] = useState<Service[] | null>(null);
   const [service, setService] = useState<Service | null>(null);
@@ -266,6 +270,7 @@ export function Booking() {
 
   async function book() {
     if (!clinic || !service || !doctor || !slot) return;
+    if (preview) return setError('pv.noAction');
     setError(null);
     setBusy(true);
     try {

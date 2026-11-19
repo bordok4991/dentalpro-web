@@ -692,6 +692,22 @@ export function makeApi(sb: SupabaseClient) {
       return (data ?? []) as MyAppointment[];
     },
 
+    /** Termini pacijenta onako kako ih on vidi (za osoblje u pregledu "kao pacijent"). */
+    async appointmentsAsPatient(patientId: string): Promise<MyAppointment[]> {
+      const since = new Date(Date.now() - 2 * 365 * 86400_000).toISOString();
+      const { data, error } = await sb
+        .from('appointments')
+        .select('id, starts_at, ends_at, service, status, doctor_id, booked_online, doctor:profiles!appointments_doctor_id_fkey(full_name)')
+        .eq('patient_id', patientId)
+        .gt('starts_at', since)
+        .order('starts_at', { ascending: false })
+        .limit(200);
+      if (error) throw error;
+      return ((data ?? []) as unknown as (Omit<MyAppointment, 'doctor_name'> & { doctor: { full_name: string } | null })[]).map(
+        ({ doctor, ...a }) => ({ ...a, doctor_name: doctor?.full_name ?? null }),
+      );
+    },
+
     async slots(clinicId: string, doctorId: string, day: string, minutes: number): Promise<string[]> {
       const { data, error } = await sb.rpc('available_slots', { p_clinic: clinicId, p_doctor: doctorId, p_day: day, p_minutes: minutes });
       if (error) throw error;

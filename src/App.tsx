@@ -20,6 +20,9 @@ import { PlanPrint } from './pages/PlanPrint';
 import { Finances } from './pages/Finances';
 import { PostEditor, Posts } from './pages/Posts';
 import { PatientApp } from './patient/PatientApp';
+import { usePreviewId } from './patient/preview';
+import { EnterPreview } from './patient/PreviewSwitch';
+import { CLINICAL_ROLES } from './lib/types';
 
 export function App() {
   const { session } = useSession();
@@ -55,6 +58,7 @@ function SignedIn() {
   const { t } = useI18n();
   const { memberships, current, loadError, refresh } = useSession();
   const { pathname } = useLocation();
+  const previewId = usePreviewId();
 
   // Pozivnica otvorena prije prijave: prihvati je odmah nakon prijave.
   const invite = pendingInvite.get();
@@ -74,6 +78,7 @@ function SignedIn() {
   if (!current) return <Welcome />;
 
   const isStaff = current.role !== 'patient';
+  const previewing = isStaff && !!previewId && CLINICAL_ROLES.includes(current.role);
   return (
     <Routes>
       {/* Ponuda za štampu: bez menija, i za osoblje i za pacijenta */}
@@ -81,7 +86,9 @@ function SignedIn() {
       <Route
         path="*"
         element={
-          isStaff ? (
+          previewing && previewId ? (
+            <PatientApp previewId={previewId} />
+          ) : isStaff ? (
             <Shell>
               <Routes>
                 <Route path="/" element={<Overview />} />
@@ -90,6 +97,7 @@ function SignedIn() {
                 <Route path="/patients" element={<Patients />} />
                 <Route path="/patients/new" element={<PatientNew />} />
                 <Route path="/patients/:id" element={<Karton />} />
+                {CLINICAL_ROLES.includes(current.role) && <Route path="/kao-pacijent/:id" element={<EnterPreview />} />}
                 <Route path="/patients/:id/plans/:planId" element={<PlanEditor />} />
                 <Route path="/services" element={<Services />} />
                 <Route path="/finances" element={<Finances />} />

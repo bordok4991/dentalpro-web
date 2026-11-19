@@ -114,6 +114,11 @@ export function Karton() {
             </li>
           )}
         </ul>
+        {clinical && (
+          <Link className="btn btn-quiet" to={`/kao-pacijent/${patient.id}`}>
+            {t('pv.open')}
+          </Link>
+        )}
       </header>
 
       {error && <Notice kind="error">{t(error)}</Notice>}

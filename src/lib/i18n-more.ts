@@ -428,6 +428,13 @@ export const bsMore = {
   'pm.pTipFor': 'Lični savjet za vas',
   'pm.pMessageFor': 'Poruka za vas',
   'pm.pPrivate': 'Ovu poruku vidite samo vi. Pitanja postavite doktoru na pregledu ili telefonom.',
+
+  'pv.open': 'Pogledaj kao pacijent',
+  'pv.banner': 'Gledaš kao pacijent: {name}',
+  'pv.readOnly': 'Samo za gledanje, ništa se ne mijenja.',
+  'pv.exit': 'Izađi',
+  'pv.noAction': 'U pregledu se ništa ne mijenja. Ovo dugme radi samo pacijentu u njegovoj aplikaciji.',
+  'pv.profile': 'Ime, telefon, jezik i lozinku pacijent uređuje sam u svojoj aplikaciji.',
 };
 
 export type MoreDict = typeof bsMore;
@@ -857,6 +864,13 @@ export const enMore: MoreDict = {
   'pm.pTipFor': 'Personal tip for you',
   'pm.pMessageFor': 'Message for you',
   'pm.pPrivate': 'Only you can see this. Ask your dentist at your next visit or by phone.',
+
+  'pv.open': 'View as patient',
+  'pv.banner': 'Viewing as patient: {name}',
+  'pv.readOnly': 'View only, nothing is changed.',
+  'pv.exit': 'Exit',
+  'pv.noAction': 'Nothing changes in preview. This button only works for the patient in their own app.',
+  'pv.profile': 'The patient edits their name, phone, language and password in their own app.',
 };
 
 /** Hrvatski: razlike u odnosu na bosanski. */

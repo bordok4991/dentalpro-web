@@ -96,7 +96,7 @@ export function MessagesSection({ patientId }: { patientId: string }) {
 export function MessageView() {
   const { id = '' } = useParams();
   const { t, date } = useI18n();
-  const { doctors } = usePatient();
+  const { doctors, preview } = usePatient();
   const [m, setM] = useState<PatientMessage | null | undefined>(undefined);
 
   useEffect(() => {
@@ -106,13 +106,13 @@ export function MessageView() {
       .then((x) => {
         if (!alive) return;
         setM(x);
-        if (x && !x.read_at) void api.markMessageRead(x.id).catch(() => undefined);
+        if (x && !x.read_at && !preview) void api.markMessageRead(x.id).catch(() => undefined);
       })
       .catch(() => alive && setM(null));
     return () => {
       alive = false;
     };
-  }, [id]);
+  }, [id, preview]);
 
   const back = (
     <Link className="text-link" to="/moj-karton#poruke">
