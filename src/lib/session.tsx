@@ -84,11 +84,13 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const userId = session?.user.id ?? null;
 
-  const load = useCallback(async () => {
+  const lastLoad = useRef(0);
+  const load = useCallback(async (quiet = false) => {
     if (!userId) return;
-    setLoadError(null);
+    if (!quiet) setLoadError(null);
     try {
       const [p, m] = await Promise.all([api.profile(userId), api.memberships(userId)]);
+      lastLoad.current = Date.now();
       setProfile(p);
       setMemberships(m);
       // Jezik iz profila važi jednom po prijavi; dalje ga mijenja korisnik.
@@ -97,9 +99,22 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         setLocale(p.locale);
       }
     } catch (e) {
-      setLoadError(e);
+      if (!quiet) setLoadError(e);
     }
   }, [userId, setLocale]);
+
+  const refresh = useCallback(() => load(), [load]);
+
+  // Aplikacija na telefonu ostaje otvorena danima: kad se vrati na ekran,
+  // tiho osvježi profil i ordinaciju (ime, logo, boje, slika doktora).
+  useEffect(() => {
+    if (!userId) return;
+    const onShow = () => {
+      if (document.visibilityState === 'visible' && Date.now() - lastLoad.current > 60_000) void load(true);
+    };
+    document.addEventListener('visibilitychange', onShow);
+    return () => document.removeEventListener('visibilitychange', onShow);
+  }, [userId, load]);
 
   useEffect(() => {
     if (session === undefined) return;
@@ -138,10 +153,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       current,
       loadError,
       selectClinic,
-      refresh: load,
+      refresh,
       signOut,
     };
-  }, [session, profile, memberships, clinicId, loadError, selectClinic, load, signOut]);
+  }, [session, profile, memberships, clinicId, loadError, selectClinic, refresh, signOut]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

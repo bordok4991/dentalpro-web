@@ -137,6 +137,7 @@ const ok = (name, cond, extra = '') => { cond ? pass++ : fail++; console.log(`  
   await shot(page, '05-tim-pozivnica');
   const linkAsi = await invite('asistent@example.test', 'assistant');
   const linkRec = await invite('recepcija@example.test', 'reception');
+  await page.locator('.rows').nth(1).locator('.rowitem').nth(2).waitFor();
   ok('tri pozivnice su na čekanju', (await page.locator('.rows').nth(1).locator('.rowitem').count()) === 3);
   await page.locator('.rows').nth(1).locator('.rowitem', { hasText: 'recepcija@example.test' }).getByRole('button', { name: 'Poništi' }).click();
   await page.locator('.rows').nth(1).locator('.rowitem').nth(2).waitFor({ state: 'detached' });
