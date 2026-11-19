@@ -2376,12 +2376,43 @@ button {
   color: var(--brand-ink);
 }
 
+.papp-top-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+.papp-about-link {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 12px;
+  color: inherit;
+  font-weight: 650;
+  border: 1px solid currentColor;
+  border-radius: 24px;
+  text-decoration: none;
+}
+
+.papp-about-link.active {
+  background: var(--brand-ink);
+  color: var(--brand);
+}
+
+.papp-about-link:focus-visible {
+  outline-color: var(--brand-ink);
+  outline-offset: 2px;
+}
+
 .papp-brand {
   display: flex;
   align-items: center;
   gap: 12px;
-  max-width: 560px;
-  margin: 0 auto;
+  min-width: 0;
   color: inherit;
   text-decoration: none;
 }
@@ -2975,7 +3006,7 @@ button {
   margin-top: -132px;
 }
 
-.story-name h3 {
+.story-name h2 {
   display: grid;
   margin: 0;
   font-family: var(--serif);
@@ -2986,7 +3017,7 @@ button {
   color: var(--ink);
 }
 
-.story-name h3 span + span {
+.story-name h2 span + span {
   font-weight: 450;
 }
 
@@ -3025,7 +3056,7 @@ button {
   margin-top: 6px;
 }
 
-.story-cred h4 {
+.story-cred h3 {
   margin: 0;
   font-family: var(--serif);
   font-size: 1.7rem;
@@ -3034,14 +3065,86 @@ button {
   color: var(--ink);
 }
 
-.story-cred-img {
+.cred-preview {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+  padding: 8px;
+  border: 1px solid color-mix(in srgb, var(--accent) 32%, var(--line));
+  border-radius: 14px;
+  background: linear-gradient(120deg, #fffaf4, var(--practice-ivory));
+  color: var(--practice-espresso);
+  font: inherit;
+  cursor: zoom-in;
+}
+
+.cred-preview img {
   display: block;
   width: 100%;
-  aspect-ratio: 4 / 3;
-  object-fit: cover;
-  border-radius: 22px;
-  box-shadow: 0 1px 0 rgb(255 255 255 / 0.7) inset, 0 26px 44px -30px color-mix(in srgb, var(--brand) 70%, #000000);
+  max-height: 26rem;
+  object-fit: contain;
+  border-radius: 7px;
 }
+
+.cred-preview > span {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 6px 2px;
+  font-size: .9rem;
+  font-weight: 600;
+}
+
+.cred-dialog {
+  width: min(94vw, 62rem);
+  max-height: 94dvh;
+  padding: 16px;
+  box-sizing: border-box;
+  border: 0;
+  border-radius: 16px;
+  color: var(--ink);
+  background: var(--surface);
+}
+
+.cred-dialog[open] {
+  display: grid;
+  gap: 12px;
+}
+
+.cred-dialog::backdrop {
+  background: rgb(18 21 24 / .76);
+}
+
+.cred-dialog header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.cred-viewport {
+  overflow: auto;
+  min-width: 0;
+  max-height: 64dvh;
+  overscroll-behavior: contain;
+  background: var(--page);
+}
+
+.cred-viewport img {
+  display: block;
+  width: 100%;
+  max-height: 64dvh;
+  object-fit: contain;
+}
+
+.cred-viewport img.is-zoomed {
+  width: auto;
+  min-width: 100%;
+  max-width: none;
+  max-height: none;
+}
+
+.cred-zoom { justify-self: start; }
 
 .cred-list {
   display: grid;
@@ -3094,64 +3197,181 @@ button {
   color: color-mix(in srgb, var(--brand) 85%, #000000);
 }
 
-/* Ordinacija */
-.story-clinic {
-  display: grid;
-  gap: 20px;
-  margin-top: 16px;
+/* Fotografija recepcije i boje iz vizuelnog identiteta ordinacije. */
+.papp {
+  --practice-ivory: color-mix(in srgb, var(--accent) 10%, #fffaf3);
+  --practice-champagne: color-mix(in srgb, var(--accent) 42%, #fff4d8);
+  --practice-espresso: color-mix(in srgb, var(--brand) 30%, #201713);
+  --practice-bronze: color-mix(in srgb, var(--brand) 68%, #342019);
 }
 
-.story-cover {
+.papp-photo-story .papp-top {
+  background: linear-gradient(110deg, var(--practice-espresso), var(--practice-bronze) 66%, color-mix(in srgb, var(--accent) 24%, var(--practice-bronze)));
+  border-bottom: 1px solid var(--practice-champagne);
+  color: #fff9ef;
+}
+
+.papp-photo-story .papp-about-link {
+  color: #fff9ef;
+  border-color: color-mix(in srgb, var(--practice-champagne) 62%, transparent);
+  background: transparent;
+}
+
+.papp-photo-story .papp-about-link.active {
+  color: var(--practice-espresso);
+  background: var(--practice-champagne);
+}
+
+.papp-photo-story .text-link { color: var(--practice-bronze); }
+
+.practice-welcome {
+  overflow: hidden;
+  isolation: isolate;
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, #f2e6d6);
+  border-radius: 22px;
+  background: linear-gradient(110deg, #fffaf3, var(--practice-ivory) 64%, color-mix(in srgb, var(--accent) 19%, #fff6e9));
+  box-shadow: 0 16px 42px -31px var(--practice-bronze);
+}
+
+.practice-welcome-photo {
   position: relative;
-  margin: 0 -16px;
+  isolation: isolate;
 }
 
-.story-cover img {
+.practice-welcome-photo img {
   display: block;
   width: 100%;
-  aspect-ratio: 16 / 11;
+  height: clamp(185px, 54vw, 315px);
   object-fit: cover;
+  object-position: center 38%;
+  -webkit-mask-image: linear-gradient(#000 58%, rgb(0 0 0 / .96) 70%, rgb(0 0 0 / .7) 82%, transparent);
+  mask-image: linear-gradient(#000 58%, rgb(0 0 0 / .96) 70%, rgb(0 0 0 / .7) 82%, transparent);
 }
 
-.story-cover figcaption {
+.practice-welcome-photo::after {
+  content: '';
   position: absolute;
-  inset: auto 0 0 0;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(125deg, color-mix(in srgb, var(--brand) 14%, transparent), transparent 48%, color-mix(in srgb, var(--accent) 13%, transparent));
+  -webkit-mask-image: linear-gradient(#000 45%, transparent);
+  mask-image: linear-gradient(#000 45%, transparent);
+}
+
+.practice-welcome-copy {
+  position: relative;
   display: grid;
-  gap: 6px;
-  padding: 72px 20px 20px;
-  color: #ffffff;
-  background: linear-gradient(180deg, rgb(20 12 6 / 0) 0%, rgb(20 12 6 / 0.72) 100%);
+  justify-items: start;
+  gap: 9px;
+  margin-top: -.7rem;
+  padding: 0 clamp(18px, 5vw, 36px) clamp(22px, 5vw, 34px);
 }
 
-.story-cover h2,
-.story-clinic-head h2 {
-  margin: 0;
-  font-family: var(--serif);
-  font-size: 1.95rem;
-  font-weight: 550;
-  line-height: 1.02;
-}
-
-.story-cover figcaption p {
-  font-size: 0.9375rem;
-  opacity: 0.9;
-}
-
-.story-clinic-head {
-  display: grid;
-  gap: 6px;
-}
-
-.story-about {
-  display: grid;
+.practice-greeting {
+  display: flex;
+  align-items: center;
   gap: 10px;
+  color: var(--practice-bronze);
+  font-size: .9rem;
+  font-weight: 650;
 }
 
-.story-about p {
-  font-family: var(--serif);
-  font-size: 1.22rem;
-  font-weight: 420;
-  line-height: 1.45;
+.practice-greeting::before {
+  content: '';
+  width: 28px;
+  height: 1px;
+  background: var(--accent);
+}
+
+.practice-welcome h1 {
+  max-width: 19ch;
+  font: 500 clamp(2.4rem, 7.6vw, 3.8rem)/.99 var(--serif);
+  letter-spacing: -.035em;
+  color: var(--practice-espresso);
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+
+.practice-welcome-description {
+  max-width: 54ch;
+  color: color-mix(in srgb, var(--practice-espresso) 77%, #766656);
+  font-size: 1rem;
+  line-height: 1.55;
+}
+
+.practice-primary-action,
+.practice-map-action {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  max-width: 100%;
+  padding: 9px 17px;
+  border: 1px solid;
+  border-radius: 8px;
+  font-weight: 650;
+  font-size: .9375rem;
+  line-height: 1.3;
+  text-decoration: none;
+}
+
+.practice-primary-action {
+  margin-top: 5px;
+  color: #fffaf3;
+  border-color: var(--practice-bronze);
+  background: linear-gradient(115deg, var(--practice-bronze), var(--practice-espresso));
+}
+
+.practice-primary-action:hover,
+.practice-map-action:hover,
+.practice-call-action:hover { text-decoration: underline; }
+
+.practice-primary-action:focus-visible,
+.practice-map-action:focus-visible,
+.practice-call-action:focus-visible {
+  outline: 3px solid currentColor;
+  outline-offset: 3px;
+}
+
+@media (min-width: 720px) {
+  .papp-main:has(.practice-welcome) { max-width: 720px; }
+  .practice-welcome h1 { max-width: none; }
+}
+
+/* Ordinacija na stranici O nama. */
+.practice-intro {
+  overflow: hidden;
+  border-radius: 16px;
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--line));
+  background: var(--surface);
+}
+
+.practice-intro-cover {
+  display: block;
+  width: 100%;
+  aspect-ratio: 8 / 5;
+  object-fit: cover;
+  object-position: 50% 42%;
+  -webkit-mask-image: linear-gradient(#000 78%, rgb(0 0 0 / .82) 87%, transparent);
+  mask-image: linear-gradient(#000 78%, rgb(0 0 0 / .82) 87%, transparent);
+}
+
+.practice-intro-copy {
+  display: grid;
+  gap: 8px;
+  padding: 16px clamp(16px, 4vw, 24px) 20px;
+}
+
+.practice-intro-cover + .practice-intro-copy { padding-top: 0; }
+.practice-intro-copy h2 {
+  font: 550 clamp(1.55rem, 6vw, 2.1rem)/1.12 var(--serif);
+  text-wrap: balance;
+}
+
+.practice-intro-copy p {
+  line-height: 1.55;
+  overflow-wrap: anywhere;
 }
 
 .story-hours {
@@ -3205,13 +3425,11 @@ button {
 }
 
 @media (min-width: 560px) {
-  .story-hero,
-  .story-cover {
+  .story-hero {
     margin: 0;
   }
 
-  .story-hero img,
-  .story-cover img {
+  .story-hero img {
     border-radius: 24px;
   }
 }
@@ -3227,22 +3445,7 @@ button {
   margin-top: clamp(-6.5rem, -18vw, -4rem);
 }
 
-.papp-photo-story .story-cover img {
-  border-radius: 18px 18px 0 0;
-  -webkit-mask-image: linear-gradient(#000 50%, rgb(0 0 0 / .85) 63%, rgb(0 0 0 / .27) 82%, transparent 98%);
-  mask-image: linear-gradient(#000 50%, rgb(0 0 0 / .85) 63%, rgb(0 0 0 / .27) 82%, transparent 98%);
-}
-
-.papp-photo-story .story-cover figcaption {
-  position: relative;
-  margin-top: -2.5rem;
-  padding: 0 16px;
-  background: none;
-  color: var(--ink);
-}
-
-.practice-services,
-.practice-location {
+.practice-services {
   position: relative;
   isolation: isolate;
   display: grid;
@@ -3255,15 +3458,14 @@ button {
   padding: 20px 0;
 }
 
-.practice-service-copy,
-.practice-location-copy {
+.practice-service-copy {
   position: relative;
   grid-column: 1;
   min-width: 0;
 }
 
 .practice-services h2,
-.practice-location h3 {
+.practice-location h2 {
   margin: 0;
   color: var(--ink);
   font-family: var(--serif);
@@ -3286,8 +3488,7 @@ button {
   overflow-wrap: anywhere;
 }
 
-.practice-room,
-.practice-location img {
+.practice-room {
   position: absolute;
   z-index: -1;
   inset: 0 0 0 auto;
@@ -3300,27 +3501,94 @@ button {
   mask-image: linear-gradient(to right, transparent, rgb(0 0 0 / .72) 20%, #000 40%);
 }
 
+.practice-visit {
+  overflow: hidden;
+  margin-top: .5rem;
+  border: 1px solid color-mix(in srgb, var(--accent) 55%, var(--practice-espresso));
+  border-radius: 18px;
+  background: var(--practice-espresso);
+  box-shadow: 0 16px 40px -32px var(--practice-bronze);
+  color: #fff9ed;
+}
+
 .practice-location {
-  grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr);
-  min-height: 210px;
-  margin-top: 0;
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  align-items: center;
+  min-height: 12.5rem;
+  background: linear-gradient(105deg, var(--practice-espresso) 12%, var(--practice-bronze) 72%, var(--brand));
 }
 
 .practice-location img {
-  width: 47%;
-  object-position: 50% 16%;
+  position: absolute;
+  z-index: -1;
+  inset: 0 0 0 auto;
+  width: 50%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 52% 18%;
+  -webkit-mask-image: linear-gradient(90deg, transparent, rgb(0 0 0 / .38) 15%, #000 44%);
+  mask-image: linear-gradient(90deg, transparent, rgb(0 0 0 / .38) 15%, #000 44%);
 }
 
 .practice-location-copy {
   display: grid;
   justify-items: start;
-  gap: 8px;
-  padding: 12px 0;
+  gap: 10px;
+  padding: clamp(18px, 4.5vw, 32px);
   overflow-wrap: anywhere;
 }
 
-.practice-location-copy p {
-  color: var(--muted);
+.practice-location.has-photo .practice-location-copy { width: 64%; }
+.practice-location h2 { color: #fff9ed; }
+.practice-location address { color: #f1e4d1; font-style: normal; }
+
+.practice-location-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 15px;
+}
+
+.practice-map-action {
+  margin-top: 4px;
+  border-color: var(--practice-champagne);
+  color: #281a10;
+  background: linear-gradient(105deg, #fff2d5, var(--practice-champagne));
+}
+
+.practice-map-action svg { flex: none; }
+
+.practice-call-action {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: #fff3df;
+  font-weight: 600;
+  text-underline-offset: 4px;
+}
+
+.practice-hours {
+  padding: 0 clamp(18px, 4.5vw, 32px);
+  background: var(--practice-ivory);
+  color: var(--practice-espresso);
+}
+
+.practice-hours summary {
+  padding: 14px 0;
+  min-height: 44px;
+  cursor: pointer;
+  font-weight: 650;
+}
+
+.practice-hours summary::marker { color: var(--practice-bronze); }
+.practice-visit .story-hours { margin: 0; padding-bottom: 10px; }
+
+@media (max-width: 390px) {
+  .practice-location.has-photo .practice-location-copy { width: 69%; }
+  .practice-location img { width: 43%; }
+  .practice-map-action { padding-inline: 10px; }
 }
 
 @media (max-width: 420px) {
@@ -3346,11 +3614,6 @@ button {
   }
 }
 
-@media (min-width: 560px) {
-  .papp-photo-story .story-cover figcaption {
-    padding: 0;
-  }
-}
 
 .present {
   display: grid;

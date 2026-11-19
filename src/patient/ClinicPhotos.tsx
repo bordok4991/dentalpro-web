@@ -33,17 +33,27 @@ export function ClinicServices({ clinicId, photo, canBook }: { clinicId: string;
   );
 }
 
-export function ClinicLocation({ photo, name, place, phone }: { photo: string; name: string; place: string; phone: string | null }) {
+export function ClinicLocation({ photo, name, place, phone }: { photo?: string | null; name: string; place: string; phone: string | null }) {
   const { t } = useI18n();
+  const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([name, place].filter(Boolean).join(', '))}`;
   return (
-    <section className="practice-location" aria-labelledby="practice-location-title">
-      <img src={photo} alt={t('p.practiceEntrance')} width={600} height={800} loading="lazy" decoding="async" />
+    <div className={`practice-location${photo ? ' has-photo' : ''}`}>
+      {photo && <img src={photo} alt={t('p.practiceEntrance')} width={600} height={800} loading="lazy" decoding="async" />}
       <div className="practice-location-copy">
-        <h3 id="practice-location-title">{t('p.directions')}</h3>
-        {place && <p>{place}</p>}
-        <a className="text-link" href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([name, place].filter(Boolean).join(', '))}`} target="_blank" rel="noreferrer">{t('p.map')}</a>
-        {phone && <a className="text-link" href={`tel:${phone.replace(/\s+/g, '')}`}>{t('p.call', { phone })}</a>}
+        <h2 id="practice-location-title">{t('p.directions')}</h2>
+        {place && <address>{place}</address>}
+        <div className="practice-location-actions">
+          {(place || photo) && (
+            <a className="practice-map-action" href={mapsUrl} target="_blank" rel="noreferrer">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
+                <path d="M19 10c0 5-7 11-7 11S5 15 5 10a7 7 0 1 1 14 0Z" /><circle cx="12" cy="10" r="2.4" />
+              </svg>
+              {t('p.findOnMap')}
+            </a>
+          )}
+          {phone && <a className="practice-call-action" href={`tel:${phone.replace(/\s+/g, '')}`}>{t('p.call', { phone })}</a>}
+        </div>
       </div>
-    </section>
+    </div>
   );
 }

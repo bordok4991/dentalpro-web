@@ -13,7 +13,7 @@ import { MyCard } from './PatientCard';
 import { MessageView, UnreadMessages } from './PatientMessages';
 import { VideoEmbed } from '../components/VideoEmbed';
 import { ExitPreview } from './PreviewSwitch';
-import { AboutDoctors, ClinicStory, hasProfile } from './AboutDoctors';
+import { AboutPractice, ClinicContact } from './AboutDoctors';
 import { ClinicServices } from './ClinicPhotos';
 
 interface PatientData {
@@ -119,18 +119,22 @@ export function PatientApp({ previewId }: { previewId?: string }) {
             </div>
           )}
           <header className="papp-top">
-            <Link to="/" className="papp-brand">
-              <Avatar url={c.logo_url} name={c.name} size={40} square />
-              <span>
-                <strong>{c.name}</strong>
-                {c.doctor_name && <span>{c.doctor_name}</span>}
-              </span>
-            </Link>
+            <div className="papp-top-inner">
+              <Link to="/" className="papp-brand">
+                <Avatar url={c.logo_url} name={c.name} size={40} square />
+                <span>
+                  <strong>{c.name}</strong>
+                  {c.doctor_name && <span>{c.doctor_name}</span>}
+                </span>
+              </Link>
+              <NavLink className="papp-about-link" to="/o-nama">{t('p.aboutTitle')}</NavLink>
+            </div>
           </header>
         </div>
         <main className="papp-main">
           <Routes>
             <Route path="/" element={<Home />} />
+            <Route path="/o-nama" element={<AboutPractice doctors={doctors} />} />
             <Route path="/termini" element={<MyAppointments />} />
             <Route path="/zakazi" element={<Booking />} />
             <Route path="/moj-karton" element={<MyCard />} />
@@ -175,7 +179,7 @@ export function NotLinked() {
 function Home() {
   const { t } = useI18n();
   const { current, profile } = useSession();
-  const { patient, appointments, doctors, preview } = usePatient();
+  const { patient, appointments, preview } = usePatient();
   const [plans, setPlans] = useState<TreatmentPlan[]>([]);
   const [posts, setPosts] = useState<Post[] | null>(null);
   const clinicId = current?.clinic.id;
@@ -211,10 +215,29 @@ function Home() {
     .filter((a) => new Date(a.ends_at).getTime() > Date.now() && ['zakazan', 'potvrdjen', 'stigao', 'u_toku'].includes(a.status))
     .sort((a, b) => a.starts_at.localeCompare(b.starts_at))[0];
   const canBook = !!patient && c.online_booking;
+  const greeting = first ? t('p.hello', { name: first }) : t('p.helloPlain');
 
   return (
     <>
-      <h1 className="papp-hello">{first ? t('p.hello', { name: first }) : t('p.helloPlain')}</h1>
+      {c.cover_url ? (
+        <header className="practice-welcome">
+          <div className="practice-welcome-photo">
+            <img src={c.cover_url} alt="" fetchPriority="high" decoding="async" />
+          </div>
+          <div className="practice-welcome-copy">
+            <p className="practice-greeting">{greeting}</p>
+            <h1>{c.name}</h1>
+            {c.about?.trim() && <p className="practice-welcome-description">{paragraphs(c.about)[0]}</p>}
+            {next ? (
+              <Link className="practice-primary-action" to="/termini">{t('p.nav.appointments')}</Link>
+            ) : canBook ? (
+              <Link className="practice-primary-action" to="/zakazi">{t('p.book')}</Link>
+            ) : null}
+          </div>
+        </header>
+      ) : (
+        <h1 className="papp-hello">{greeting}</h1>
+      )}
       {patient === null && <NotLinked />}
 
       <section className="papp-section" aria-labelledby="p-next">
@@ -226,16 +249,9 @@ function Home() {
         ) : (
           <div className="pcard pcard-empty">
             <p>{t('p.noNext')}</p>
-            {canBook ? (
-              <Link className="btn btn-primary" to="/zakazi">
-                {t('p.book')}
-              </Link>
-            ) : (
-              c.phone && (
-                <a className="btn btn-quiet" href={`tel:${c.phone.replace(/\s+/g, '')}`}>
-                  {t('p.callToBook')}
-                </a>
-              )
+            {canBook && !c.cover_url && <Link className="btn btn-primary" to="/zakazi">{t('p.book')}</Link>}
+            {!canBook && c.phone && (
+              <a className="btn btn-quiet" href={`tel:${c.phone.replace(/\s+/g, '')}`}>{t('p.callToBook')}</a>
             )}
           </div>
         )}
@@ -262,8 +278,6 @@ function Home() {
 
       {c.services_photo_url && <ClinicServices key={c.id} clinicId={c.id} photo={c.services_photo_url} canBook={canBook} />}
 
-      <AboutDoctors doctors={doctors} />
-
       {posts && posts.length > 0 && (
         <section className="papp-section" aria-labelledby="p-news">
           <div className="block-head">
@@ -280,7 +294,7 @@ function Home() {
         </section>
       )}
 
-      <ClinicStory doctors={doctors.filter((d) => !hasProfile(d))} />
+      <ClinicContact />
     </>
   );
 }

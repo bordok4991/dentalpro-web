@@ -1,3 +1,4 @@
+import { useEffect, useId, useRef, useState } from 'react';
 import { useI18n } from '../lib/i18n';
 import { educationItems, paragraphs } from '../lib/format';
 import { useSession } from '../lib/session';
@@ -6,8 +7,8 @@ import { Avatar } from '../components/Avatar';
 import { ClinicLocation } from './ClinicPhotos';
 
 /** Doktor ima šta pokazati pacijentima: veću sliku, biografiju ili obrazovanje. */
-export function hasProfile(d: Doctor): boolean {
-  return !!(d.photo_url || d.bio?.trim() || d.education?.trim());
+function hasProfile(d: Doctor): boolean {
+  return !!(d.photo_url || d.bio?.trim() || d.education?.trim() || d.credentials_url);
 }
 
 /** "dr Nisveta Bešlija Hasanagić" → ["dr Nisveta", "Bešlija Hasanagić"] */
@@ -27,16 +28,42 @@ function Seal() {
   );
 }
 
+function CredentialsPhoto({ src, name }: { src: string; name: string }) {
+  const { t } = useI18n();
+  const dialog = useRef<HTMLDialogElement>(null);
+  const titleId = useId();
+  const [zoomed, setZoomed] = useState(false);
+  const alt = t('p.credentialsPhoto', { name });
+
+  return (
+    <>
+      <button type="button" className="cred-preview" aria-haspopup="dialog" onClick={() => dialog.current?.showModal()}>
+        <img src={src} alt={alt} loading="lazy" decoding="async" />
+        <span>{t('p.viewCredentials')} <span aria-hidden="true">⤢</span></span>
+      </button>
+      <dialog ref={dialog} className="cred-dialog" aria-labelledby={titleId} onClose={() => setZoomed(false)}>
+        <header>
+          <h2 id={titleId}>{t('p.education')}</h2>
+          <button type="button" className="btn btn-quiet" onClick={() => dialog.current?.close()}>{t('p.closePhoto')}</button>
+        </header>
+        <div className="cred-viewport" tabIndex={0} role="region" aria-label={alt}>
+          <img className={zoomed ? 'is-zoomed' : undefined} src={src} alt={alt} loading="lazy" />
+        </div>
+        <button type="button" className="btn btn-quiet cred-zoom" aria-pressed={zoomed} onClick={() => setZoomed(!zoomed)}>
+          {t(zoomed ? 'p.fitPhoto' : 'p.zoomPhoto')}
+        </button>
+      </dialog>
+    </>
+  );
+}
+
 /** Predstavljanje doktora: portret, ime, kratko o doktoru, edukacije sa slikom certifikata. */
-export function AboutDoctors({ doctors }: { doctors: Doctor[] }) {
+function AboutDoctors({ doctors }: { doctors: Doctor[] }) {
   const { t } = useI18n();
   const shown = doctors.filter(hasProfile);
   if (shown.length === 0) return null;
   return (
-    <section className="story" aria-labelledby="p-about">
-      <h2 id="p-about" className="sr-only">
-        {t('p.aboutTitle')}
-      </h2>
+    <section className="story" aria-label={t('p.careTeam')}>
       {shown.map((d) => {
         const role = d.specialty || t(d.role === 'owner' ? 'role.doctor' : `role.${d.role}`);
         const edu = educationItems(d.education);
@@ -51,10 +78,10 @@ export function AboutDoctors({ doctors }: { doctors: Doctor[] }) {
               <Avatar url={d.avatar_url} name={d.full_name} size={96} />
             )}
             <header className="story-name">
-              <h3 id={`doc-${d.user_id}`}>
+              <h2 id={`doc-${d.user_id}`}>
                 <span>{first}</span>
                 {rest && <span>{rest}</span>}
-              </h3>
+              </h2>
               <p>{role}</p>
             </header>
             {d.bio?.trim() && (
@@ -66,8 +93,8 @@ export function AboutDoctors({ doctors }: { doctors: Doctor[] }) {
             )}
             {(edu.length > 0 || d.credentials_url) && (
               <section className="story-cred" aria-labelledby={`edu-${d.user_id}`}>
-                <h4 id={`edu-${d.user_id}`}>{t('p.education')}</h4>
-                {d.credentials_url && <img className="story-cred-img" src={d.credentials_url} alt={t('p.credentialsPhoto', { name: d.full_name })} loading="lazy" />}
+                <h3 id={`edu-${d.user_id}`}>{t('p.education')}</h3>
+                {d.credentials_url && <CredentialsPhoto src={d.credentials_url} name={d.full_name} />}
                 {edu.length > 0 && (
                   <ul className="cred-list">
                     {edu.map((e, i) => (
@@ -91,44 +118,28 @@ export function AboutDoctors({ doctors }: { doctors: Doctor[] }) {
   );
 }
 
-/** Ordinacija: slika prostora s imenom, opis, kontakt i radno vrijeme (danas istaknuto). */
-export function ClinicStory({ doctors }: { doctors: Doctor[] }) {
+export function AboutPractice({ doctors }: { doctors: Doctor[] }) {
   const { t } = useI18n();
   const { current } = useSession();
+  const otherDoctors = doctors.filter((d) => !hasProfile(d));
+
+  useEffect(() => { window.scrollTo(0, 0); }, []);
   if (!current) return null;
   const c = current.clinic;
-  const place = [c.address, c.city].filter(Boolean).join(', ');
-  const names = t('cal.weekdays').split('|');
-  const order = ['1', '2', '3', '4', '5', '6', '0'] as const;
-  const open = order.filter((d) => c.working_hours?.[d]);
-  const today = String(new Date().getDay());
-
   return (
-    <section className="story-clinic" aria-labelledby="p-clinic">
-      {c.cover_url ? (
-        <figure className="story-cover">
-          <img src={c.cover_url} alt="" loading="lazy" />
-          <figcaption>
-            <h2 id="p-clinic">{c.name}</h2>
-            {!c.entrance_photo_url && place && <p>{place}</p>}
-          </figcaption>
-        </figure>
-      ) : (
-        <header className="story-clinic-head">
-          <h2 id="p-clinic">{c.name}</h2>
-          {!c.entrance_photo_url && place && <p className="meta">{place}</p>}
-        </header>
-      )}
-      {c.about?.trim() && (
-        <div className="story-about">
-          {paragraphs(c.about).map((p, i) => (
-            <p key={i}>{p}</p>
-          ))}
+    <>
+      <h1>{t('p.aboutTitle')}</h1>
+      <section className="practice-intro" aria-labelledby="about-clinic-name">
+        {!doctors.some(hasProfile) && c.cover_url && <img className="practice-intro-cover" src={c.cover_url} alt="" decoding="async" />}
+        <div className="practice-intro-copy">
+          <h2 id="about-clinic-name">{c.name}</h2>
+          {paragraphs(c.about ?? '').map((paragraph, i) => <p key={i}>{paragraph}</p>)}
         </div>
-      )}
-      {doctors.length > 0 && (
-        <ul className="doctors">
-          {doctors.map((d) => (
+      </section>
+      <AboutDoctors doctors={doctors} />
+      {otherDoctors.length > 0 && (
+        <ul className="doctors" aria-label={t('p.careTeam')}>
+          {otherDoctors.map((d) => (
             <li key={d.user_id}>
               <Avatar url={d.avatar_url} name={d.full_name} size={56} />
               <span>
@@ -139,36 +150,42 @@ export function ClinicStory({ doctors }: { doctors: Doctor[] }) {
           ))}
         </ul>
       )}
-      {c.entrance_photo_url ? (
-        <ClinicLocation photo={c.entrance_photo_url} name={c.name} place={place} phone={c.phone} />
-      ) : (
-        <div className="row">
-          {c.phone && (
-            <a className="btn btn-primary" href={`tel:${c.phone.replace(/\s+/g, '')}`}>
-              {t('p.call', { phone: c.phone })}
-            </a>
-          )}
-          {place && (
-            <a className="btn btn-quiet" href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${c.name}, ${place}`)}`} target="_blank" rel="noreferrer">
-              {t('p.map')}
-            </a>
-          )}
-        </div>
-      )}
+    </>
+  );
+}
+
+export function ClinicContact() {
+  const { t } = useI18n();
+  const { current } = useSession();
+  if (!current) return null;
+  const c = current.clinic;
+  const place = [c.address, c.city].filter(Boolean).join(', ');
+  const names = t('cal.weekdays').split('|');
+  const order = ['1', '2', '3', '4', '5', '6', '0'] as const;
+  const open = order.filter((d) => c.working_hours?.[d]);
+  const today = String(new Date().getDay());
+  if (!place && !c.phone && !c.entrance_photo_url && !open.length) return null;
+
+  return (
+    <section className="practice-visit" aria-labelledby="practice-location-title">
+      <ClinicLocation photo={c.entrance_photo_url} name={c.name} place={place} phone={c.phone} />
       {open.length > 0 && (
-        <dl className="story-hours">
-          {open.map((d) => (
-            <div key={d} className={d === today ? 'is-today' : undefined}>
-              <dt>
-                <span className="day-name">{names[Number(d)]}</span>
-                {d === today && <span className="today-chip">{t('p.today')}</span>}
-              </dt>
-              <dd>
-                {c.working_hours[d]![0]}–{c.working_hours[d]![1]}
-              </dd>
-            </div>
-          ))}
-        </dl>
+        <details className="practice-hours">
+          <summary>{t('p.openingHours')}</summary>
+          <dl className="story-hours">
+            {open.map((d) => (
+              <div key={d} className={d === today ? 'is-today' : undefined}>
+                <dt>
+                  <span className="day-name">{names[Number(d)]}</span>
+                  {d === today && <span className="today-chip">{t('p.today')}</span>}
+                </dt>
+                <dd>
+                  {c.working_hours[d]![0]}–{c.working_hours[d]![1]}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </details>
       )}
     </section>
   );
