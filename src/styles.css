@@ -3254,79 +3254,54 @@ button {
 
 .papp-photo-story .text-link { color: var(--practice-bronze); }
 
-.practice-welcome {
-  overflow: hidden;
-  isolation: isolate;
-  border: 1px solid color-mix(in srgb, var(--accent) 45%, #f2e6d6);
-  border-radius: 22px;
-  background: linear-gradient(110deg, #fffaf3, var(--practice-ivory) 64%, color-mix(in srgb, var(--accent) 19%, #fff6e9));
-  box-shadow: 0 16px 42px -31px var(--practice-bronze);
+/*
+ * Fotografije ordinacije u istom jeziku kao portret doktorice:
+ * slika ide preko cijele širine telefona i pri dnu se topi u podlogu,
+ * a naslov u serifu leži na tom prelazu.
+ */
+.papp {
+  --fade-down: linear-gradient(180deg, #000 0%, #000 52%, rgb(0 0 0 / 0.86) 66%, rgb(0 0 0 / 0.42) 82%, rgb(0 0 0 / 0.1) 93%, transparent 100%);
 }
 
-.practice-welcome-photo {
-  position: relative;
-  isolation: isolate;
+/* Početna: dobrodošlica na slici ordinacije */
+.practice-welcome {
+  margin: -20px -16px 0;
 }
 
 .practice-welcome-photo img {
   display: block;
   width: 100%;
-  height: clamp(185px, 54vw, 315px);
+  aspect-ratio: 5 / 4;
+  max-height: 520px;
   object-fit: cover;
-  object-position: center 38%;
-  -webkit-mask-image: linear-gradient(#000 58%, rgb(0 0 0 / .96) 70%, rgb(0 0 0 / .7) 82%, transparent);
-  mask-image: linear-gradient(#000 58%, rgb(0 0 0 / .96) 70%, rgb(0 0 0 / .7) 82%, transparent);
-}
-
-.practice-welcome-photo::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: linear-gradient(125deg, color-mix(in srgb, var(--brand) 14%, transparent), transparent 48%, color-mix(in srgb, var(--accent) 13%, transparent));
-  -webkit-mask-image: linear-gradient(#000 45%, transparent);
-  mask-image: linear-gradient(#000 45%, transparent);
+  object-position: 50% 45%;
+  -webkit-mask-image: var(--fade-down);
+  mask-image: var(--fade-down);
 }
 
 .practice-welcome-copy {
   position: relative;
   display: grid;
   justify-items: start;
-  gap: 9px;
-  margin-top: -.7rem;
-  padding: 0 clamp(18px, 5vw, 36px) clamp(22px, 5vw, 34px);
-}
-
-.practice-greeting {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: var(--practice-bronze);
-  font-size: .9rem;
-  font-weight: 650;
-}
-
-.practice-greeting::before {
-  content: '';
-  width: 28px;
-  height: 1px;
-  background: var(--accent);
+  gap: 12px;
+  margin-top: clamp(-104px, -20vw, -64px);
+  padding: 0 16px 4px;
 }
 
 .practice-welcome h1 {
-  max-width: 19ch;
-  font: 500 clamp(2.4rem, 7.6vw, 3.8rem)/.99 var(--serif);
-  letter-spacing: -.035em;
+  font: 500 clamp(2.6rem, 12vw, 3.6rem) / 1 var(--serif);
+  letter-spacing: -0.02em;
   color: var(--practice-espresso);
   text-wrap: balance;
-  overflow-wrap: anywhere;
 }
 
 .practice-welcome-description {
-  max-width: 54ch;
-  color: color-mix(in srgb, var(--practice-espresso) 77%, #766656);
-  font-size: 1rem;
-  line-height: 1.55;
+  max-width: 34ch;
+  font-family: var(--serif);
+  font-size: 1.22rem;
+  line-height: 1.5;
+  color: color-mix(in srgb, var(--practice-espresso) 82%, #7a6858);
+  text-wrap: pretty;
 }
 
 .practice-primary-action,
@@ -3335,23 +3310,26 @@ button {
   justify-content: center;
   align-items: center;
   gap: 8px;
-  min-height: 44px;
+  min-height: 48px;
   max-width: 100%;
-  padding: 9px 17px;
+  padding: 10px 20px;
   border: 1px solid;
-  border-radius: 8px;
+  border-radius: 10px;
   font-weight: 650;
-  font-size: .9375rem;
+  font-size: 0.9375rem;
   line-height: 1.3;
   text-decoration: none;
 }
 
-.practice-primary-action {
-  margin-top: 5px;
+.practice-primary-action,
+.practice-map-action {
   color: #fffaf3;
   border-color: var(--practice-bronze);
   background: linear-gradient(115deg, var(--practice-bronze), var(--practice-espresso));
+  box-shadow: 0 1px 0 rgb(255 255 255 / 0.18) inset, 0 14px 26px -18px var(--practice-bronze);
 }
+
+.practice-primary-action { margin-top: 4px; }
 
 .practice-primary-action:hover,
 .practice-map-action:hover,
@@ -3364,44 +3342,81 @@ button {
   outline-offset: 3px;
 }
 
-@media (min-width: 720px) {
-  .papp-main:has(.practice-welcome) { max-width: 720px; }
-  .practice-welcome h1 { max-width: none; }
-}
-
-/* Ordinacija na stranici O nama. */
+/* O nama: ordinacija ispod doktorice */
 .practice-intro {
-  overflow: hidden;
-  border-radius: 16px;
-  border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--line));
-  background: var(--surface);
+  display: grid;
+  margin-top: 12px;
 }
 
-.practice-intro-cover {
+.practice-intro-photo {
+  margin: 0 -16px;
+}
+
+.practice-intro-photo img {
   display: block;
   width: 100%;
-  aspect-ratio: 8 / 5;
+  aspect-ratio: 4 / 3;
   object-fit: cover;
-  object-position: 50% 42%;
-  -webkit-mask-image: linear-gradient(#000 78%, rgb(0 0 0 / .82) 87%, transparent);
-  mask-image: linear-gradient(#000 78%, rgb(0 0 0 / .82) 87%, transparent);
+  object-position: 50% 45%;
+  -webkit-mask-image: var(--fade-down);
+  mask-image: var(--fade-down);
 }
 
 .practice-intro-copy {
+  position: relative;
   display: grid;
-  gap: 8px;
-  padding: 16px clamp(16px, 4vw, 24px) 20px;
+  gap: 14px;
 }
 
-.practice-intro-cover + .practice-intro-copy { padding-top: 0; }
+.practice-intro-photo + .practice-intro-copy {
+  margin-top: clamp(-96px, -18vw, -56px);
+}
+
 .practice-intro-copy h2 {
-  font: 550 clamp(1.55rem, 6vw, 2.1rem)/1.12 var(--serif);
+  font: 500 clamp(2.2rem, 10vw, 3rem) / 1.02 var(--serif);
+  letter-spacing: -0.02em;
+  color: var(--practice-espresso);
   text-wrap: balance;
 }
 
-.practice-intro-copy p {
-  line-height: 1.55;
+.practice-intro-place {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: var(--practice-bronze);
+  font-weight: 600;
+}
+
+.practice-intro-place::before {
+  content: '';
+  flex: none;
+  width: 36px;
+  height: 1px;
+  background: var(--accent);
+}
+
+.practice-intro-copy p:not(.practice-intro-place) {
+  font-family: var(--serif);
+  font-size: 1.3rem;
+  line-height: 1.5;
+  color: var(--ink);
   overflow-wrap: anywhere;
+}
+
+@media (min-width: 560px) {
+  .practice-welcome { margin: 0; }
+  .practice-intro-photo { margin: 0; }
+  .practice-welcome-photo img,
+  .practice-intro-photo img { border-radius: 24px; }
+}
+
+@media (min-width: 720px) {
+  .papp-main:has(.practice-welcome) { max-width: 720px; }
+}
+
+/* O nama počinje portretom odmah ispod zaglavlja */
+@media (max-width: 559px) {
+  .papp-main > .sr-only:first-child + .story > .story-doc-photo:first-child { margin-top: -20px; }
 }
 
 .story-hours {
@@ -3475,78 +3490,72 @@ button {
   margin-top: clamp(-6.5rem, -18vw, -4rem);
 }
 
+/* Usluge: tamna traka u bojama ordinacije, slika se topi u nju */
 .practice-services {
   position: relative;
   isolation: isolate;
   display: grid;
-  grid-template-columns: minmax(0, 1.25fr) minmax(0, .75fr);
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.75fr);
   align-items: center;
   overflow: hidden;
   margin: 14px 0 6px;
-  border: 1px solid color-mix(in srgb, var(--accent) 65%, var(--practice-espresso));
-  border-radius: 22px;
+  border-radius: 24px;
   background: var(--practice-espresso);
   color: #fff8ee;
-  box-shadow: 0 18px 38px -28px var(--practice-bronze);
+  box-shadow: 0 24px 48px -34px var(--practice-espresso);
 }
 
 .practice-service-copy {
   position: relative;
   grid-column: 1;
   min-width: 0;
-  padding: 30px 0 30px 28px;
+  padding: 32px 0 32px 28px;
 }
 
 .practice-services h2,
 .practice-location h2 {
   margin: 0;
-  color: var(--ink);
   font-family: var(--serif);
-  font-size: clamp(1.75rem, 6vw, 2.15rem);
-  line-height: 1.08;
-  font-weight: 550;
-  letter-spacing: -.02em;
+  font-size: clamp(2.1rem, 9vw, 2.6rem);
+  line-height: 1.04;
+  font-weight: 500;
+  letter-spacing: -0.02em;
 }
+
+.practice-services h2 { color: var(--practice-champagne); }
 
 .practice-services ul {
   list-style: none;
-  margin: 22px 0;
+  margin: 22px 0 26px;
   padding: 0;
   border-top: 1px solid color-mix(in srgb, var(--practice-champagne) 30%, transparent);
 }
 
-.practice-services h2 {
-  color: var(--practice-champagne);
-  font-size: clamp(1.9rem, 6vw, 2.25rem);
-  font-weight: 450;
-}
-
 .practice-services li {
+  padding: 13px 0;
   border-bottom: 1px solid color-mix(in srgb, var(--practice-champagne) 18%, transparent);
-  padding: 12px 0;
-  font-size: 1rem;
-  line-height: 1.5;
+  font-size: 1.02rem;
+  line-height: 1.45;
   overflow-wrap: anywhere;
 }
 
 .practice-service-booking {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 24px;
-  min-height: 48px;
+  justify-content: center;
+  min-height: 50px;
   padding: 11px 18px;
   border: 1px solid var(--practice-champagne);
-  border-radius: 9px;
-  background: linear-gradient(110deg, #f6e8c9, var(--practice-champagne));
+  border-radius: 10px;
+  background: linear-gradient(110deg, #f8ebcf, var(--practice-champagne));
   color: var(--practice-espresso);
   font-weight: 650;
   text-decoration: none;
+  box-shadow: 0 1px 0 rgb(255 255 255 / 0.6) inset;
 }
 
 .practice-service-booking:hover { background: #fff4dc; }
 .practice-service-booking:focus-visible { outline: 2px solid #fff8ee; outline-offset: 4px; }
-.practice-service-booking span { font-size: 1.3rem; line-height: 1; }
 
 .practice-service-prices {
   display: flex;
@@ -3642,66 +3651,91 @@ button {
   width: 50%;
   height: 100%;
   object-fit: cover;
-  object-position: 50% 53%;
-  -webkit-mask-image: linear-gradient(to right, transparent, rgb(0 0 0 / .32) 30%, #000 72%);
-  mask-image: linear-gradient(to right, transparent, rgb(0 0 0 / .32) 30%, #000 72%);
+  object-position: 50% 45%;
+  -webkit-mask-image: linear-gradient(to right, transparent, rgb(0 0 0 / 0.32) 30%, #000 72%);
+  mask-image: linear-gradient(to right, transparent, rgb(0 0 0 / 0.32) 30%, #000 72%);
 }
 
+@media (max-width: 600px) {
+  .practice-services {
+    display: block;
+    margin: 18px -16px 8px;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .practice-room {
+    position: static;
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 4 / 3;
+    -webkit-mask-image: var(--fade-down);
+    mask-image: var(--fade-down);
+  }
+
+  .practice-service-copy {
+    margin-top: clamp(-88px, -17vw, -56px);
+    padding: 0 16px 36px;
+  }
+}
+
+/* Kako do nas: slika ulaza, adresa, karta, poziv i radno vrijeme */
 .practice-visit {
-  overflow: hidden;
-  margin-top: .5rem;
-  border: 1px solid color-mix(in srgb, var(--accent) 55%, var(--practice-espresso));
-  border-radius: 18px;
-  background: var(--practice-espresso);
-  box-shadow: 0 16px 40px -32px var(--practice-bronze);
-  color: #fff9ed;
-}
-
-.practice-location {
-  position: relative;
-  isolation: isolate;
   display: grid;
-  align-items: center;
-  min-height: 12.5rem;
-  background: linear-gradient(105deg, var(--practice-espresso) 12%, var(--practice-bronze) 72%, var(--brand));
+  gap: 4px;
+  margin-top: 10px;
 }
 
 .practice-location img {
-  position: absolute;
-  z-index: -1;
-  inset: 0 0 0 auto;
-  width: 50%;
-  height: 100%;
+  display: block;
+  width: calc(100% + 32px);
+  height: auto;
+  margin: 0 -16px;
+  aspect-ratio: 4 / 3;
   object-fit: cover;
-  object-position: 52% 18%;
-  -webkit-mask-image: linear-gradient(90deg, transparent, rgb(0 0 0 / .38) 15%, #000 44%);
-  mask-image: linear-gradient(90deg, transparent, rgb(0 0 0 / .38) 15%, #000 44%);
+  object-position: 50% 32%;
+  -webkit-mask-image: var(--fade-down);
+  mask-image: var(--fade-down);
 }
 
 .practice-location-copy {
+  position: relative;
   display: grid;
   justify-items: start;
-  gap: 10px;
-  padding: clamp(18px, 4.5vw, 32px);
+  gap: 12px;
   overflow-wrap: anywhere;
 }
 
-.practice-location.has-photo .practice-location-copy { width: 64%; }
-.practice-location h2 { color: #fff9ed; }
-.practice-location address { color: #f1e4d1; font-style: normal; }
+.practice-location.has-photo .practice-location-copy {
+  margin-top: clamp(-88px, -17vw, -56px);
+}
+
+.practice-location h2 { color: var(--practice-espresso); }
+
+.practice-location address {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: var(--practice-bronze);
+  font-style: normal;
+  font-weight: 600;
+}
+
+.practice-location address::before {
+  content: '';
+  flex: none;
+  width: 36px;
+  height: 1px;
+  background: var(--accent);
+}
 
 .practice-location-actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 2px 15px;
-}
-
-.practice-map-action {
+  gap: 4px 18px;
   margin-top: 4px;
-  border-color: var(--practice-champagne);
-  color: #281a10;
-  background: linear-gradient(105deg, #fff2d5, var(--practice-champagne));
 }
 
 .practice-map-action svg { flex: none; }
@@ -3709,54 +3743,65 @@ button {
 .practice-call-action {
   display: inline-flex;
   align-items: center;
-  min-height: 44px;
-  color: #fff3df;
-  font-weight: 600;
+  min-height: 48px;
+  color: var(--practice-bronze);
+  font-weight: 650;
   text-underline-offset: 4px;
 }
 
 .practice-hours {
-  padding: 0 clamp(18px, 4.5vw, 32px);
-  background: var(--practice-ivory);
-  color: var(--practice-espresso);
+  margin-top: 10px;
+  border-top: 1px solid var(--line);
 }
 
 .practice-hours summary {
-  padding: 14px 0;
-  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 52px;
   cursor: pointer;
+  list-style: none;
   font-weight: 650;
+  color: var(--practice-espresso);
 }
 
-.practice-hours summary::marker { color: var(--practice-bronze); }
-.practice-visit .story-hours { margin: 0; padding-bottom: 10px; }
+.practice-hours summary::-webkit-details-marker { display: none; }
 
-@media (max-width: 390px) {
-  .practice-location.has-photo .practice-location-copy { width: 69%; }
-  .practice-location img { width: 43%; }
-  .practice-map-action { padding-inline: 10px; }
+.practice-hours summary::after {
+  content: '';
+  flex: none;
+  width: 9px;
+  height: 9px;
+  margin-right: 4px;
+  border-right: 1.6px solid var(--practice-bronze);
+  border-bottom: 1.6px solid var(--practice-bronze);
+  transform: translateY(-3px) rotate(45deg);
+  transition: transform 0.2s ease;
 }
 
-@media (max-width: 600px) {
-  .practice-services {
-    display: block;
-    padding: 0;
-  }
+.practice-hours[open] summary::after { transform: translateY(2px) rotate(-135deg); }
 
-  .practice-room {
-    position: static;
-    display: block;
+.hours-today {
+  margin-left: auto;
+  font-weight: 500;
+  color: color-mix(in srgb, var(--practice-espresso) 70%, #8a7764);
+  font-variant-numeric: tabular-nums;
+}
+
+.practice-hours .story-hours { margin: 0 0 6px; }
+.practice-hours .story-hours > div:first-child { border-top: 0; }
+
+@media (min-width: 560px) {
+  .practice-location img {
     width: 100%;
-    height: clamp(180px, 55vw, 260px);
-    object-position: 50% 56%;
-    -webkit-mask-image: linear-gradient(#000 36%, rgb(0 0 0 / .8) 58%, rgb(0 0 0 / .25) 82%, transparent);
-    mask-image: linear-gradient(#000 36%, rgb(0 0 0 / .8) 58%, rgb(0 0 0 / .25) 82%, transparent);
+    margin: 0;
+    border-radius: 24px;
   }
+}
 
-  .practice-service-copy {
-    margin-top: -24px;
-    padding: 0 22px 24px;
-  }
+@media (prefers-reduced-motion: reduce) {
+  .practice-hours summary::after { transition: none; }
 }
 
 

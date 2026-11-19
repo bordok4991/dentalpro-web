@@ -522,6 +522,7 @@ const ok = (name, cond, extra = '') => { cond ? pass++ : fail++; console.log(`  
   ok('pacijent ulazi u svoju aplikaciju', (await page.locator('.papp-tabs a').count()) === 5 && (await page.locator('.shell').count()) === 0);
   await page.locator('.appt-card-next', { hasText: 'Kompozitni ispun 36' }).waitFor();
   ok('početna prikazuje sljedeći termin', (await page.locator('.appt-card-next').innerText()).includes('Dolazak potvrđen'));
+  await waitText(page, 'Doktor vam je poslao plan terapije').catch(() => {});
   ok('početna javlja da čeka plan terapije', await has(page, 'Doktor vam je poslao plan terapije'));
   await shot(page, '24-pacijent-pocetna');
   await page.goto(BASE + '/team');
@@ -589,6 +590,16 @@ const ok = (name, cond, extra = '') => { cond ? pass++ : fail++; console.log(`  
   await page.getByLabel('O ordinaciji').fill('Ordinacija u centru Sarajeva.');
   await page.getByRole('button', { name: 'Sačuvaj ordinaciju' }).click();
   await waitText(page, 'Podaci ordinacije su sačuvani.');
+  const clinicCovers = () => page.locator('form', { hasText: 'Sačuvaj ordinaciju' }).locator('img.upload-cover').count();
+  for (const [label, n] of [['Slika ordinacije', 1], ['Slika uz usluge', 2], ['Slika ulaza', 3]]) {
+    await page.getByLabel(label, { exact: true }).setInputFiles(PNG);
+    await page.waitForFunction(
+      (k) => [...document.querySelectorAll('form')].find((f) => f.textContent.includes('Sačuvaj ordinaciju'))?.querySelectorAll('img.upload-cover').length >= k,
+      n,
+    );
+  }
+  const photos = (await psql("select (cover_url like '%/media/clinics/%')::text || (services_photo_url like '%/media/clinics/%')::text || (entrance_photo_url like '%/media/clinics/%')::text from clinics where name = 'Demo Dental'")).trim();
+  ok('vlasnik postavlja sliku ordinacije, sliku uz usluge i sliku ulaza', photos === 'truetruetrue' && (await clinicCovers()) === 3, photos);
   await shot(page, '26-postavke-slike');
   await navTo(page, 'Pregled');
   await page.locator('.doctors img.avatar').first().waitFor();
@@ -726,6 +737,7 @@ const ok = (name, cond, extra = '') => { cond ? pass++ : fail++; console.log(`  
   console.log('== Pacijent zakazuje online');
   await page.getByRole('link', { name: 'Zakaži još jedan termin' }).click();
   await waitText(page, 'Šta vam treba?');
+  await page.locator('.choice').first().waitFor();
   ok('za online su ponuđene samo usluge koje to dozvoljavaju', (await page.locator('.choice').count()) === 2 && !(await has(page, 'Izbjeljivanje')));
   await page.getByRole('radio', { name: /Kontrolni pregled/ }).click();
   await waitText(page, 'Koji dan?');
@@ -760,12 +772,19 @@ const ok = (name, cond, extra = '') => { cond ? pass++ : fail++; console.log(`  
   await page.locator('.fin-owes', { hasText: '22,00 KM' }).waitFor();
   ok('pacijent vidi koliko mu je preostalo za platiti', (await page.locator('.plan-lines', { hasText: '50,00 KM' }).count()) === 1);
   await page.locator('.papp-tabs').getByRole('link', { name: 'Početna' }).click();
-  await page.locator('.story-hero img').first().waitFor();
-  ok('pacijent vidi sliku doktora i logo ordinacije', (await page.locator('.papp-brand img').count()) === 1);
+  await page.locator('.practice-welcome img').waitFor();
+  ok('pacijent vidi logo ordinacije i dobrodošlicu na slici ordinacije', (await page.locator('.papp-brand img').count()) === 1 && (await page.locator('.practice-welcome h1').innerText()) === 'Zdravo, Amra' && (await has(page, 'Ordinacija u centru Sarajeva.')));
+  const svc = page.locator('.practice-services');
+  await svc.locator('li').first().waitFor();
+  ok('uz sliku su navedene samo usluge za online zakazivanje', (await svc.locator('li').count()) === 2 && !(await svc.innerText()).includes('Izbjeljivanje') && (await svc.locator('img').count()) === 1);
+  const visit = page.locator('.practice-visit');
+  ok('kako do nas: slika ulaza, poziv i današnje radno vrijeme', (await visit.locator('img').count()) === 1 && (await visit.getByRole('link', { name: /Nazovi/ }).count()) === 1 && /^danas /.test(await visit.locator('.hours-today').innerText()));
+  await shot(page, '31a-pocetna-slike', true);
+  await page.locator('.papp-top').getByRole('link', { name: 'O nama' }).click();
   const about = page.locator('.story-doc');
   await about.waitFor();
   ok('pacijent vidi doktora: veću sliku, biografiju i obrazovanje', (await about.locator('.story-hero img').count()) === 1 && (await about.locator('.cred-year').innerText()) === '2014' && (await about.locator('.cred-title').first().innerText()) === 'Stomatološki fakultet' && (await about.innerText()).includes('Kurs estetske stomatologije'));
-  ok('pacijent vidi opis ordinacije', await has(page, 'Ordinacija u centru Sarajeva.'));
+  ok('o nama: ordinacija sa slikom i opisom, radno vrijeme otvoreno', (await page.locator('.practice-intro img').count()) === 1 && (await page.locator('.practice-intro').innerText()).includes('Ordinacija u centru Sarajeva.') && (await page.locator('.practice-hours[open]').count()) === 1);
   await about.scrollIntoViewIfNeeded();
   await shot(page, '31b-o-nama');
   await page.locator('.papp-tabs').getByRole('link', { name: 'Profil' }).click();

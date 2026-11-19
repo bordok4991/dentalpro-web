@@ -378,6 +378,11 @@ eq "vlasnik upisuje opis ordinacije" "$(admin "select about from clinics where i
 eq "pacijent vidi opis ordinacije" "$(as $P2 "select about from clinics where id='$CA'" | tail -1)" "Ordinacija u Goraždu."
 as $DA "update clinics set about='hak' where id='$CA'" >/dev/null
 eq "doktor ne mijenja opis ordinacije" "$(admin "select about from clinics where id='$CA'")" "Ordinacija u Goraždu."
+as $OA "update clinics set services_photo_url='https://x.test/s.jpg', entrance_photo_url='https://x.test/u.jpg' where id='$CA'" >/dev/null
+eq "vlasnik postavlja sliku uz usluge i sliku ulaza" "$(as $P2 "select services_photo_url || ' ' || entrance_photo_url from clinics where id='$CA'" | tail -1)" "https://x.test/s.jpg https://x.test/u.jpg"
+as $P2 "update clinics set services_photo_url='hak' where id='$CA'" >/dev/null
+eq "pacijent ne mijenja slike ordinacije" "$(admin "select services_photo_url from clinics where id='$CA'")" "https://x.test/s.jpg"
+has "slika ordinacije ima ograničenu veličinu" "$(as $OA "update clinics set entrance_photo_url=repeat('a',300001) where id='$CA'")" "violates check"
 eq "stranac ne vidi doktore ordinacije" "$(as $OUT "select count(*) from clinic_doctors('$CA')" | tail -1)" "0"
 
 echo "== Ukidanje pristupa pacijentu"

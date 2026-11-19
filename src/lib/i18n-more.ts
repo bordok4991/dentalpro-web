@@ -446,7 +446,7 @@ export const bsMore = {
   'p.closePhoto': 'Zatvori',
   'p.openingHours': 'Radno vrijeme',
   'p.practiceServices': 'Usluge ordinacije',
-  'p.treatmentRoom': 'Prostor za stomatološke zahvate',
+  'p.treatmentRoom': 'Prostor ordinacije',
   'p.practiceEntrance': 'Ulaz u ordinaciju',
   'p.directions': 'Kako do nas',
   'p.findOnMap': 'Pronađi nas na mapi',
@@ -463,10 +463,16 @@ export const bsMore = {
   'settings.clinicAbout': 'O ordinaciji',
   'settings.clinicAboutHint': 'Nekoliko rečenica za pacijente: ko ste, šta radite, kako do vas.',
   'settings.cover': 'Slika ordinacije',
-  'settings.coverHint': 'Prostor ili čekaonica, položena slika.',
+  'settings.coverHint': 'Prostor ili čekaonica, položena slika. Pacijent je vidi na vrhu početne i u O nama.',
+  'settings.servicesPhoto': 'Slika uz usluge',
+  'settings.servicesPhotoHint': 'Recepcija ili stolica, uspravna slika. Ide iznad liste usluga na početnoj.',
+  'settings.entrancePhoto': 'Slika ulaza',
+  'settings.entrancePhotoHint': 'Ulaz ili zgrada, da pacijent lakše nađe ordinaciju. Ide uz Kako do nas.',
   'settings.credentials': 'Slika diploma i certifikata',
   'settings.credentialsHint': 'Neobavezno. Prikazuje se uz obrazovanje i edukacije.',
   'p.today': 'danas',
+  'p.todayHours': 'danas {from}–{to}',
+  'p.todayClosed': 'danas ne radimo',
 };
 
 export type MoreDict = typeof bsMore;
@@ -914,7 +920,7 @@ export const enMore: MoreDict = {
   'p.closePhoto': 'Close',
   'p.openingHours': 'Opening hours',
   'p.practiceServices': 'Our services',
-  'p.treatmentRoom': 'Dental treatment room',
+  'p.treatmentRoom': 'Inside the practice',
   'p.practiceEntrance': 'Practice entrance',
   'p.directions': 'How to find us',
   'p.findOnMap': 'Find us on the map',
@@ -931,10 +937,16 @@ export const enMore: MoreDict = {
   'settings.clinicAbout': 'About the practice',
   'settings.clinicAboutHint': 'A few sentences for patients: who you are, what you do, how to find you.',
   'settings.cover': 'Practice photo',
-  'settings.coverHint': 'The practice or waiting room, landscape.',
+  'settings.coverHint': 'The practice or waiting room, landscape. Patients see it at the top of the home screen and in About us.',
+  'settings.servicesPhoto': 'Photo with services',
+  'settings.servicesPhotoHint': 'Reception or the dental chair, portrait. Shown above the list of services on the home screen.',
+  'settings.entrancePhoto': 'Entrance photo',
+  'settings.entrancePhotoHint': 'The entrance or building, so patients find you easily. Shown with How to find us.',
   'settings.credentials': 'Diplomas and certificates photo',
   'settings.credentialsHint': 'Optional. Shown next to your education and training.',
   'p.today': 'today',
+  'p.todayHours': 'today {from}–{to}',
+  'p.todayClosed': 'closed today',
 };
 
 /** Hrvatski: razlike u odnosu na bosanski. */

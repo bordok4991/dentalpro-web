@@ -265,6 +265,30 @@ function ClinicForm({ clinic }: { clinic: Clinic }) {
           await refresh();
         }}
       />
+      <ImageUpload
+        label={t('settings.servicesPhoto')}
+        hint={t('settings.servicesPhotoHint')}
+        url={clinic.services_photo_url ?? null}
+        name={clinic.name}
+        folder={`clinics/${clinic.id}/logo`}
+        kind="cover"
+        onChange={async (url) => {
+          await api.updateClinic(clinic.id, { services_photo_url: url });
+          await refresh();
+        }}
+      />
+      <ImageUpload
+        label={t('settings.entrancePhoto')}
+        hint={t('settings.entrancePhotoHint')}
+        url={clinic.entrance_photo_url ?? null}
+        name={clinic.name}
+        folder={`clinics/${clinic.id}/logo`}
+        kind="cover"
+        onChange={async (url) => {
+          await api.updateClinic(clinic.id, { entrance_photo_url: url });
+          await refresh();
+        }}
+      />
       <Button type="submit" busy={busy}>
         {t('settings.saveClinic')}
       </Button>

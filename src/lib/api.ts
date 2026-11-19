@@ -105,6 +105,8 @@ export function makeApi(sb: SupabaseClient) {
           | 'working_hours'
           | 'about'
           | 'cover_url'
+          | 'services_photo_url'
+          | 'entrance_photo_url'
         >
       >,
     ): Promise<Clinic> {
