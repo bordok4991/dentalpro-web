@@ -289,6 +289,8 @@ export const bsMore = {
   'err.apptMissing': 'Termin ne postoji.',
 
   'p.nav.label': 'Aplikacija',
+  'p.practiceNavigation': 'Ordinacija',
+  'p.priceOnRequest': 'Na upit',
   'p.nav.home': 'Početna',
   'p.nav.appointments': 'Termini',
   'p.nav.card': 'Moj karton',
@@ -755,6 +757,8 @@ export const enMore: MoreDict = {
   'err.apptMissing': 'This appointment does not exist.',
 
   'p.nav.label': 'App',
+  'p.practiceNavigation': 'Practice',
+  'p.priceOnRequest': 'On request',
   'p.nav.home': 'Home',
   'p.nav.appointments': 'Appointments',
   'p.nav.card': 'My record',

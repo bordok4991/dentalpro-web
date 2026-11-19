@@ -2408,6 +2408,36 @@ button {
   outline-offset: 2px;
 }
 
+.papp-practice-nav {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 8px;
+}
+
+.papp-price-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--practice-champagne);
+  border-radius: 24px;
+  background: var(--practice-champagne);
+  color: var(--practice-espresso);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.papp-price-link.active { box-shadow: inset 0 0 0 2px var(--practice-espresso); }
+.papp-price-link:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+
+@media (max-width: 600px) {
+  .papp-top-inner { flex-wrap: wrap; gap: 10px; }
+  .papp-practice-nav { width: 100%; }
+  .papp-practice-nav a { flex: 1; justify-content: center; }
+}
+
 .papp-brand {
   display: flex;
   align-items: center;
@@ -3517,6 +3547,93 @@ button {
 .practice-service-booking:hover { background: #fff4dc; }
 .practice-service-booking:focus-visible { outline: 2px solid #fff8ee; outline-offset: 4px; }
 .practice-service-booking span { font-size: 1.3rem; line-height: 1; }
+
+.practice-service-prices {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 48px;
+  margin-top: 10px;
+  padding: 10px 18px;
+  border: 1px solid color-mix(in srgb, var(--practice-champagne) 55%, transparent);
+  border-radius: 9px;
+  color: var(--practice-champagne);
+  font-weight: 650;
+  text-decoration: none;
+}
+
+.practice-service-prices:hover { background: rgb(255 255 255 / .08); }
+.practice-service-prices:focus-visible { outline: 2px solid #fff8ee; outline-offset: 4px; }
+
+.practice-welcome-actions,
+.patient-price-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.practice-price-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 10px 20px;
+  border: 1px solid var(--practice-bronze);
+  border-radius: 8px;
+  color: var(--practice-espresso);
+  background: var(--practice-champagne);
+  text-decoration: none;
+  font-weight: 650;
+}
+
+.practice-price-action:hover { background: #fff4dc; }
+.practice-price-action:focus-visible { outline: 2px solid var(--practice-bronze); outline-offset: 3px; }
+
+.patient-prices {
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, #e3d9cb);
+  border-radius: 22px;
+  background: #fffaf3;
+  box-shadow: 0 18px 38px -28px var(--practice-bronze);
+}
+
+.patient-prices-header {
+  padding: 26px 24px;
+  background: linear-gradient(115deg, var(--practice-espresso), var(--practice-bronze));
+  border-bottom: 1px solid var(--practice-champagne);
+}
+
+.patient-prices-header h1 {
+  margin: 0;
+  color: var(--practice-champagne);
+  font-family: var(--serif);
+  font-size: 2.5rem;
+  font-weight: 450;
+}
+
+.patient-prices-body { padding: 0 22px 24px; }
+.patient-prices-body > .notice { margin-top: 20px; }
+.patient-prices-list { list-style: none; padding: 0; margin: 0 0 22px; }
+
+.patient-prices-list li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 18px;
+  padding: 18px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--accent) 24%, #e9e1d6);
+  line-height: 1.45;
+}
+
+.patient-price-name { overflow-wrap: anywhere; }
+.patient-price-amount { color: var(--practice-espresso); font-variant-numeric: tabular-nums; text-align: right; }
+
+@media (max-width: 360px) {
+  .patient-prices-body { padding-inline: 16px; }
+  .patient-prices-list li { gap: 10px; }
+}
 
 .practice-room {
   position: absolute;

@@ -15,6 +15,7 @@ import { VideoEmbed } from '../components/VideoEmbed';
 import { ExitPreview } from './PreviewSwitch';
 import { AboutPractice, ClinicContact } from './AboutDoctors';
 import { ClinicServices } from './ClinicPhotos';
+import { PatientPriceList } from './PatientPriceList';
 
 interface PatientData {
   /** undefined dok se učitava; null kad nalog nije povezan s kartonom */
@@ -127,13 +128,17 @@ export function PatientApp({ previewId }: { previewId?: string }) {
                   {c.doctor_name && <span>{c.doctor_name}</span>}
                 </span>
               </Link>
-              <NavLink className="papp-about-link" to="/o-nama">{t('p.aboutTitle')}</NavLink>
+              <nav className="papp-practice-nav" aria-label={t('p.practiceNavigation')}>
+                <NavLink className="papp-price-link" to="/cjenovnik">{t('services.title')}</NavLink>
+                <NavLink className="papp-about-link" to="/o-nama">{t('p.aboutTitle')}</NavLink>
+              </nav>
             </div>
           </header>
         </div>
         <main className="papp-main">
           <Routes>
             <Route path="/" element={<Home />} />
+            <Route path="/cjenovnik" element={<PatientPriceList key={c.id} />} />
             <Route path="/o-nama" element={<AboutPractice doctors={doctors} />} />
             <Route path="/termini" element={<MyAppointments />} />
             <Route path="/zakazi" element={<Booking />} />
@@ -228,11 +233,14 @@ function Home() {
             <p className="practice-greeting">{greeting}</p>
             <h1>{c.name}</h1>
             {c.about?.trim() && <p className="practice-welcome-description">{paragraphs(c.about)[0]}</p>}
-            {next ? (
-              <Link className="practice-primary-action" to="/termini">{t('p.nav.appointments')}</Link>
-            ) : canBook ? (
-              <Link className="practice-primary-action" to="/zakazi">{t('p.book')}</Link>
-            ) : null}
+            <div className="practice-welcome-actions">
+              {next ? (
+                <Link className="practice-primary-action" to="/termini">{t('p.nav.appointments')}</Link>
+              ) : canBook ? (
+                <Link className="practice-primary-action" to="/zakazi">{t('p.book')}</Link>
+              ) : null}
+              <Link className="practice-price-action" to="/cjenovnik">{t('services.title')}</Link>
+            </div>
           </div>
         </header>
       ) : (

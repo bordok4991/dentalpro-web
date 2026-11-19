@@ -32,6 +32,7 @@ export function ClinicServices({ clinicId, photo, canBook }: { clinicId: string;
             {t('p.book')}<span aria-hidden="true">↗</span>
           </Link>
         )}
+        <Link className="practice-service-prices" to="/cjenovnik">{t('services.title')}<span aria-hidden="true">→</span></Link>
       </div>
     </section>
   );
