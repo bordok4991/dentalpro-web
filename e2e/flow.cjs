@@ -399,7 +399,7 @@ const ok = (name, cond, extra = '') => { cond ? pass++ : fail++; console.log(`  
   ok('zakazivanje iz kartona preuzima pacijenta', true);
   await page.getByLabel('Datum', { exact: true }).fill(tomorrow);
   await page.getByLabel('Početak').fill('10:00');
-  await page.getByLabel('Trajanje').selectOption('60');
+  await page.getByLabel('Trajanje').fill('60');
   await page.getByLabel('Usluga').fill('Kompozitni ispun 36');
   await page.getByRole('button', { name: 'Zakaži termin' }).click();
   await page.locator('.appt', { hasText: 'Amra Begić' }).waitFor();
@@ -428,6 +428,21 @@ const ok = (name, cond, extra = '') => { cond ? pass++ : fail++; console.log(`  
   await page.getByLabel('Prikaži otkazane').check();
   ok('otkazani se mogu prikazati', (await page.locator('.appt.appt-st-otkazan').count()) === 1);
   await page.getByLabel('Prikaži otkazane').uncheck();
+  ok('kalendar počinje sedmičnim prikazom', await page.locator('.cal-week-grid .cal-colhead').count() === 7);
+  await page.getByRole('button', { name: 'Mjeseci', exact: true }).click();
+  await page.locator('.cal-month').nth(1).waitFor();
+  await page.locator('.cal-month').first().locator('button').filter({ has: page.locator('strong', { hasText: new RegExp('^' + Number(tomorrow.slice(-2)) + '$') }) }).click();
+  ok('iz dvomjesečnog pregleda otvara se dan', (await page.getByRole('button', { name: 'Dan', exact: true }).getAttribute('aria-pressed')) === 'true');
+  await page.locator('.cal-header').getByRole('button', { name: 'Blokiraj vrijeme' }).click();
+  const blockForm = page.locator('.cal-side form');
+  await blockForm.getByLabel('Početak').fill('13:00');
+  await blockForm.getByLabel('Trajanje').fill('120');
+  await blockForm.locator('button[type=submit]').click();
+  await page.locator('.appt-block').waitFor();
+  ok('privatno vrijeme može se rezervisati bez kartona', (await page.locator('.cal-side').getByRole('link', { name: 'Otvori karton' }).count()) === 0);
+  await page.getByRole('button', { name: 'Oslobodi vrijeme' }).click();
+  await page.getByRole('button', { name: 'Potvrdi oslobađanje' }).click();
+  await page.locator('.appt-block').waitFor({ state: 'hidden' });
   await page.locator('.appt', { hasText: '10:00' }).click();
   await shot(page, '18-kalendar');
   await page.getByRole('link', { name: 'Otvori karton' }).click();
@@ -445,7 +460,7 @@ const ok = (name, cond, extra = '') => { cond ? pass++ : fail++; console.log(`  
     const f = page.locator('form', { has: page.getByRole('button', { name: 'Sačuvaj uslugu' }) });
     await f.getByLabel('Naziv usluge').fill(name);
     await f.getByLabel('Cijena (KM)').fill(price);
-    await f.getByLabel('Trajanje').selectOption(String(minutes));
+    await f.getByLabel('Trajanje u minutama').fill(String(minutes));
     if (!online) await f.getByLabel('Pacijenti je mogu sami zakazati u aplikaciji').uncheck();
     await f.getByRole('button', { name: 'Sačuvaj uslugu' }).click();
   }
@@ -581,7 +596,7 @@ const ok = (name, cond, extra = '') => { cond ? pass++ : fail++; console.log(`  
   await page.locator('.upload-photo img.avatar').waitFor();
   ok('slika doktora se postavlja', (await page.locator('.upload-photo img.avatar').getAttribute('src')).endsWith('.jpg'));
   await page.getByLabel('Veća slika').setInputFiles(PNG);
-  await page.locator('.present img.upload-cover').waitFor();
+  await page.locator('.present img.upload-thumbnail').waitFor();
   await page.getByLabel('Kratko o meni').fill('Doktorica stomatologije. Redovno se usavršava.');
   await page.getByLabel('Obrazovanje i edukacije').fill('2014 — Stomatološki fakultet, Univerzitet u Sarajevu\nKurs estetske stomatologije');
   await page.getByRole('button', { name: 'Sačuvaj profil' }).click();
@@ -590,11 +605,11 @@ const ok = (name, cond, extra = '') => { cond ? pass++ : fail++; console.log(`  
   await page.getByLabel('O ordinaciji').fill('Ordinacija u centru Sarajeva.');
   await page.getByRole('button', { name: 'Sačuvaj ordinaciju' }).click();
   await waitText(page, 'Podaci ordinacije su sačuvani.');
-  const clinicCovers = () => page.locator('form', { hasText: 'Sačuvaj ordinaciju' }).locator('img.upload-cover').count();
+  const clinicCovers = () => page.locator('form', { hasText: 'Sačuvaj ordinaciju' }).locator('img.upload-thumbnail').count();
   for (const [label, n] of [['Slika ordinacije', 1], ['Slika uz usluge', 2], ['Slika ulaza', 3]]) {
     await page.getByLabel(label, { exact: true }).setInputFiles(PNG);
     await page.waitForFunction(
-      (k) => [...document.querySelectorAll('form')].find((f) => f.textContent.includes('Sačuvaj ordinaciju'))?.querySelectorAll('img.upload-cover').length >= k,
+      (k) => [...document.querySelectorAll('form')].find((f) => f.textContent.includes('Sačuvaj ordinaciju'))?.querySelectorAll('img.upload-thumbnail').length >= k,
       n,
     );
   }
@@ -780,7 +795,8 @@ const ok = (name, cond, extra = '') => { cond ? pass++ : fail++; console.log(`  
   const visit = page.locator('.practice-visit');
   ok('kako do nas: slika ulaza, poziv i radno vrijeme', (await visit.locator('img').count()) === 1 && (await visit.getByRole('link', { name: /Nazovi/ }).count()) === 1 && (await visit.locator('.practice-hours summary').innerText()) === 'Radno vrijeme');
   await shot(page, '31a-pocetna-slike', true);
-  await page.locator('.papp-top').getByRole('link', { name: 'Cjenovnik' }).click();
+  ok('cjenovnik je uz usluge, izvan zaglavlja i uvodne kartice', (await page.locator('.papp-top, .practice-welcome').getByRole('link', { name: 'Cjenovnik' }).count()) === 0);
+  await svc.getByRole('link', { name: 'Cjenovnik' }).click();
   await page.locator('.patient-prices-list li').first().waitFor();
   const prices = await page.locator('.patient-prices-list').innerText();
   ok('pacijent vidi cijeli aktivni cjenovnik s cijenama', prices.includes('Izbjeljivanje') && prices.includes('Kompozitni ispun') && prices.includes('KM'), prices);

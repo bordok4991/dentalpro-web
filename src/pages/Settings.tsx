@@ -2,22 +2,33 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { useI18n, type Key } from '../lib/i18n';
 import { errorKey } from '../lib/errors';
 import { api, useSession } from '../lib/session';
-import { CURRENCIES, LOCALES, type Clinic, type Currency, type Locale, type WorkingHours } from '../lib/types';
+import { CURRENCIES, LOCALES, type Clinic, type Currency, type Locale, type WorkingHours, type Service } from '../lib/types';
 import { Button, Field, Notice, SelectField, TextField } from '../components/ui';
+import { Link, useLocation } from 'react-router-dom';
+import { validDuration } from '../lib/schedule';
 import { ImageUpload } from '../components/ImageUpload';
 
 export function Settings() {
   const { t } = useI18n();
   const { current } = useSession();
+  const { hash } = useLocation();
+  useEffect(() => {
+    if (hash) document.getElementById(hash.slice(1))?.scrollIntoView();
+  }, [hash, current?.clinic.id]);
   if (!current) return null;
   return (
     <>
       <header className="page-head">
         <h1>{t('settings.title')}</h1>
+        {current.role === 'owner' && <nav className="row settings-shortcuts" aria-label={t('cal.viewSettings')}>
+          <a className="text-link" href="#trajanje-usluga">{t('cal.durationSettings')}</a>
+          <a className="text-link" href="#radno-vrijeme">{t('cal.hoursLink')}</a>
+        </nav>}
       </header>
       <ProfileForm />
       {current.role === 'owner' ? (
         <>
+          <ServiceDurations key={`d-${current.clinic.id}`} clinicId={current.clinic.id} />
           <ClinicForm key={current.clinic.id} clinic={current.clinic} />
           <HoursForm key={`h-${current.clinic.id}`} clinic={current.clinic} />
         </>
@@ -339,7 +350,7 @@ function HoursForm({ clinic }: { clinic: Clinic }) {
   }
 
   return (
-    <form className="block" onSubmit={submit} noValidate>
+    <form id="radno-vrijeme" className="block" onSubmit={submit} noValidate>
       <h2>{t('settings.hours')}</h2>
       <p className="lead">{t('settings.hoursLead')}</p>
       {msg && <Notice kind={msg.kind}>{t(msg.key)}</Notice>}
@@ -376,4 +387,59 @@ function HoursForm({ clinic }: { clinic: Clinic }) {
       </Button>
     </form>
   );
+}
+
+function ServiceDurations({ clinicId }: { clinicId: string }) {
+  const { t } = useI18n();
+  const [services, setServices] = useState<Service[] | null>(null);
+  const [id, setId] = useState('');
+  const [minutes, setMinutes] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<{ kind: 'error' | 'ok'; key: Key } | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    api.services(clinicId).then((items) => {
+      if (!alive) return;
+      const active = items.filter((s) => s.is_active);
+      setServices(active);
+      setId(active[0]?.id ?? '');
+      setMinutes(String(active[0]?.duration_min ?? ''));
+    }).catch((err) => alive && setMessage({ kind: 'error', key: errorKey(err) }));
+    return () => { alive = false; };
+  }, [clinicId]);
+
+  async function save(e: FormEvent) {
+    e.preventDefault();
+    if (!validDuration(Number(minutes))) return setMessage({ kind: 'error', key: 'cal.durationError' });
+    try {
+      setBusy(true);
+      const updated = await api.setServiceDuration(clinicId, id, Number(minutes));
+      setServices((list) => list?.map((s) => s.id === id ? updated : s) ?? null);
+      setMessage({ kind: 'ok', key: 'cal.savedDuration' });
+    } catch (err) {
+      setMessage({ kind: 'error', key: errorKey(err) });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return <form id="trajanje-usluga" className="block form-grid" onSubmit={save} noValidate>
+    <h2>{t('cal.durationSettings')}</h2>
+    <p className="hint">{t('cal.settingsHint')}</p>
+    {message && <Notice kind={message.kind}>{t(message.key)}</Notice>}
+    {services && services.length > 0 ? (<>
+      <div className="grid-2">
+        <SelectField label={t('appt.service')} value={id} disabled={busy} onChange={(e) => {
+          const s = services.find((s) => s.id === e.target.value)!;
+          setId(s.id); setMinutes(String(s.duration_min)); setMessage(null);
+        }}>
+          {services.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+        </SelectField>
+        <Field label={t('cal.minuteField')} type="number" min={5} max={480} step={1} value={minutes} disabled={busy}
+          onChange={(e) => { setMinutes(e.target.value); setMessage(null); }} />
+      </div>
+      <div className="row"><Button type="submit" busy={busy}>{t('services.save')}</Button></div>
+    </>) : services ? <Link className="text-link" to="/services">{t('services.add')}</Link> : !message && <p>{t('common.loading')}</p>}
+  </form>;
 }

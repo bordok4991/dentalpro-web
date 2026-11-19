@@ -1696,6 +1696,8 @@ button {
 }
 
 .upload {
+  min-width: 0;
+  width: 100%;
   display: flex;
   align-items: center;
   gap: 16px;
@@ -1704,8 +1706,9 @@ button {
   border-radius: var(--radius);
 }
 
-.upload-cover {
-  width: 120px;
+.upload-thumbnail {
+  flex: none;
+  width: 108px;
   height: 80px;
   border-radius: 8px;
   object-fit: cover;
@@ -1715,6 +1718,15 @@ button {
   display: grid;
   gap: 6px;
   min-width: 0;
+}
+
+.upload .row { flex-wrap: wrap; }
+.upload-body .hint { margin: 0; overflow-wrap: anywhere; }
+.upload > .avatar { flex-shrink: 0; }
+
+@media (max-width: 480px) {
+  .upload { align-items: flex-start; gap: 12px; padding: 12px; }
+  .upload-thumbnail { width: 66px; height: 72px; }
 }
 
 .upload-label {
@@ -2413,29 +2425,6 @@ button {
   align-items: center;
   flex-shrink: 0;
   gap: 8px;
-}
-
-.papp-price-link {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 44px;
-  padding: 0 16px;
-  border: 1px solid var(--practice-champagne);
-  border-radius: 24px;
-  background: var(--practice-champagne);
-  color: var(--practice-espresso);
-  font-weight: 700;
-  text-decoration: none;
-}
-
-.papp-price-link.active { box-shadow: inset 0 0 0 2px var(--practice-espresso); }
-.papp-price-link:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
-
-@media (max-width: 600px) {
-  .papp-top-inner { flex-wrap: wrap; gap: 10px; }
-  .papp-practice-nav { width: 100%; }
-  .papp-practice-nav a { flex: 1; justify-content: center; }
 }
 
 .papp-brand {
@@ -3605,23 +3594,6 @@ button {
   gap: 12px;
 }
 
-.practice-price-action {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 44px;
-  padding: 10px 20px;
-  border: 1px solid var(--practice-bronze);
-  border-radius: 8px;
-  color: var(--practice-espresso);
-  background: var(--practice-champagne);
-  text-decoration: none;
-  font-weight: 650;
-}
-
-.practice-price-action:hover { background: #fff4dc; }
-.practice-price-action:focus-visible { outline: 2px solid var(--practice-bronze); outline-offset: 3px; }
-
 .patient-prices {
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--accent) 45%, #e3d9cb);
@@ -3943,4 +3915,105 @@ button {
     background: #ffffff;
     box-shadow: none;
   }
+}
+
+/* Raspored ordinacije */
+.cal-header, .cal-footer, .cal-navigation, .cal-views, .cal-slot-list {
+  display: flex;
+  align-items: center;
+}
+.cal-header { justify-content: space-between; flex-wrap: wrap; gap: 14px; }
+.cal-header .lead { margin: 4px 0 0; font-variant-numeric: tabular-nums; }
+.cal-tools { margin-bottom: 14px; }
+.cal-tools .cal-bar { margin-bottom: 10px; }
+.cal-navigation { gap: 6px; }
+.cal-navigation .icon-btn { width: 40px; font-size: 1.45rem; }
+.cal-views {
+  width: fit-content;
+  gap: 3px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+.cal-views button, .cal-slot-list button {
+  min-height: 38px;
+  padding: 5px 13px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 650;
+}
+.cal-views button[aria-pressed='true'], .cal-slot-list button[aria-pressed='true'] {
+  color: var(--brand-ink);
+  background: var(--brand);
+}
+.cal-filters, .cal-footer { color: var(--muted); font-size: .85rem; }
+.cal-filters select { max-width: 100%; padding: 6px; font: inherit; }
+.cal-board, .cal-inspector { min-width: 0; }
+.cal-scroll { max-height: min(76vh, 900px); overflow: auto; }
+.cal-week-grid { grid-template-columns: 48px repeat(7, minmax(84px, 1fr)); min-width: 636px; }
+.cal-colhead { min-height: 46px; padding: 6px 8px; }
+.cal-colhead button { width: 100%; min-height: 32px; border: 0; background: transparent; color: inherit; font: inherit; font-weight: 650; cursor: pointer; }
+.cal-colhead[data-today='true'] { color: var(--brand); box-shadow: inset 0 -3px var(--brand); }
+.cal-col { margin: 0; background: #f0ece6; }
+.cal-col::after {
+  position: absolute; inset: 0; pointer-events: none;
+  background: repeating-linear-gradient(to bottom, rgb(89 67 44 / 18%) 0 1px, transparent 1px var(--hour)),
+    repeating-linear-gradient(to bottom, rgb(89 67 44 / 7%) 0 1px, transparent 1px calc(var(--hour) / 2));
+  content: '';
+}
+.cal-office { position: absolute; left: 0; right: 0; background: var(--surface); }
+.cal-slot {
+  position: absolute; z-index: 1; left: 0; right: 0; width: 100%; border: 0; padding: 0 4px;
+  color: transparent; background: transparent; font: inherit; font-size: .78rem; text-align: left; cursor: pointer;
+}
+.cal-slot:hover, .cal-slot:focus-visible { color: var(--ink); background: #f4e8d1; }
+.cal-col .appt { z-index: 2; }
+.cal-col .appt:focus-visible, .cal-col .appt[aria-pressed='true'] { z-index: 3; }
+.cal-col .appt-block { color: #50341e; border-left: 3px solid #9d713f; background: repeating-linear-gradient(120deg, #f0e2cb 0 6px, #eadac0 6px 8px); }
+.cal-times { position: sticky; left: 0; z-index: 3; margin: 0; background: var(--surface); }
+.cal-times span { transform: none; }
+.cal-corner { left: 0; z-index: 5; min-height: 46px; }
+.cal-colhead { z-index: 4; }
+.cal-col .cal-now { z-index: 3; left: 0; margin: 0; background: var(--brand); }
+.cal-footer { gap: 8px 16px; justify-content: space-between; flex-wrap: wrap; margin: 0; padding: 10px 14px; border-top: 1px solid var(--line); }
+.cal-footer > :last-child { margin-left: auto; }
+.cal-inspector { scroll-margin-top: 14px; }
+.cal-inspector .cal-side { margin: 0; }
+.cal-available { min-width: 0; margin: 0; padding: 10px; border: 1px solid var(--line); border-radius: 10px; }
+.cal-available legend { padding: 0 5px; font-weight: 650; }
+.cal-slot-list { gap: 5px; flex-wrap: wrap; }
+.cal-slot-list button { min-height: 32px; padding: 3px 7px; border-color: var(--line); font-size: .85rem; }
+.cal-end { margin: 0; display: flex; gap: 8px; align-items: center; }
+.cal-months { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); }
+.cal-month { min-width: 0; margin: 0; padding: 16px; }
+.cal-month h2 { margin: 0 0 12px; font-size: 1.2rem; text-transform: capitalize; }
+.cal-month-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px; }
+.cal-weekday { padding: 4px 0; text-align: center; font-size: .74rem; color: var(--muted); }
+.cal-month-day {
+  position: relative; min-height: 43px; padding: 2px 2px 12px; font: inherit; font-size: .9rem;
+  border: 1px solid transparent; border-radius: 7px; background: var(--surface); color: var(--ink); cursor: pointer;
+}
+.cal-month-day:hover, .cal-month-day:focus-visible { background: #f5ebdc; }
+.cal-month-day[aria-current='date'] { border-color: var(--brand); color: var(--brand); }
+.cal-month-load {
+  position: absolute; bottom: 2px; left: 50%; transform: translateX(-50%);
+  padding: 0 5px; border-radius: 8px; background: #eee0c7; color: #513617; font-size: .66rem;
+}
+.settings-shortcuts { margin-top: 10px; gap: 10px 18px; }
+#trajanje-usluga, #radno-vrijeme { scroll-margin-top: 18px; }
+.present { min-inline-size: 0; }
+@media (max-width: 1050px) {
+  .cal-layout-open { grid-template-columns: minmax(0, 1fr); }
+  .cal-layout-open .cal-inspector { grid-row: 1; }
+}
+@media (max-width: 500px) {
+  .cal-header { align-items: flex-start; }
+  .cal-month { padding: 10px; }
+  .cal-form-mode { width: 100%; }
+  .cal-form-mode button { flex: 1; }
 }

@@ -6,7 +6,7 @@ import { api, useSession } from '../lib/session';
 import type { Service, ServiceInput } from '../lib/types';
 import { Button, Field, Loading, Notice } from '../components/ui';
 
-const DURATIONS = [10, 15, 20, 30, 45, 60, 90, 120, 180];
+import { validDuration } from '../lib/schedule';
 
 /** Cjenovnik: usluge s cijenom i trajanjem. Mijenja vlasnik; ostali vide. */
 export function Services() {
@@ -112,6 +112,7 @@ function ServiceForm({ clinicId, service, onSaved, onCancel }: { clinicId: strin
     if (!name.trim()) return setError('err.serviceName');
     const p = parseAmount(price);
     if (p === null || p < 0) return setError('err.price');
+    if (!validDuration(minutes)) return setError('cal.durationError');
     const input: ServiceInput = { name, price: p, duration_min: minutes, is_active: active, online };
     setBusy(true);
     try {
@@ -128,16 +129,7 @@ function ServiceForm({ clinicId, service, onSaved, onCancel }: { clinicId: strin
       <Field label={t('services.name')} value={name} maxLength={120} onChange={(e) => setName(e.target.value)} autoFocus={!service} />
       <div className="grid-2">
         <Field label={t('services.price', { currency })} inputMode="decimal" value={price} onChange={(e) => setPrice(e.target.value)} />
-        <div className="field">
-          <label htmlFor={`dur-${service?.id ?? 'new'}`}>{t('services.duration')}</label>
-          <select id={`dur-${service?.id ?? 'new'}`} value={minutes} onChange={(e) => setMinutes(Number(e.target.value))}>
-            {[...new Set([...DURATIONS, minutes])].sort((a, b) => a - b).map((m) => (
-              <option key={m} value={m}>
-                {t('services.minutes', { n: m })}
-              </option>
-            ))}
-          </select>
-        </div>
+        <Field label={t('cal.minuteField')} type="number" min={5} max={480} step={1} value={minutes || ''} onChange={(e) => setMinutes(Number(e.target.value))} />
       </div>
       <label className="check">
         <input type="checkbox" checked={online} onChange={(e) => setOnline(e.target.checked)} />

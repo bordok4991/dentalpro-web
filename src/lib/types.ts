@@ -170,7 +170,8 @@ export const BUSY_STATUSES: AppointmentStatus[] = ['zakazan', 'potvrdjen', 'stig
 export interface Appointment {
   id: string;
   clinic_id: string;
-  patient_id: string;
+  patient_id: string | null;
+  is_private_block: boolean;
   doctor_id: string;
   starts_at: string;
   ends_at: string;
@@ -184,7 +185,8 @@ export interface Appointment {
 }
 
 export interface AppointmentInput {
-  patient_id: string;
+  patient_id: string | null;
+  is_private_block: boolean;
   doctor_id: string;
   starts_at: string;
   ends_at: string;

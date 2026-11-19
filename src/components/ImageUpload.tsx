@@ -65,9 +65,9 @@ export function ImageUpload({
   }
 
   return (
-    <div className={`upload upload-${kind}`}>
+    <div className="upload">
       {kind === 'cover' ? (
-        url ? <img className="upload-cover" src={url} alt="" /> : null
+        url ? <img className="upload-thumbnail" src={url} alt="" /> : null
       ) : (
         <Avatar url={url} name={name} size={kind === 'logo' ? 64 : 72} square={kind === 'logo'} />
       )}

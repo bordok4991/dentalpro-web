@@ -4,9 +4,9 @@ import { useI18n } from '../lib/i18n';
 import { api } from '../lib/session';
 import type { Service } from '../lib/types';
 
-export function ClinicServices({ clinicId, photo, canBook }: { clinicId: string; photo: string; canBook: boolean }) {
+export function ClinicServices({ clinicId, photo, canBook }: { clinicId: string; photo?: string | null; canBook: boolean }) {
   const { t } = useI18n();
-  const [services, setServices] = useState<Service[]>([]);
+  const [services, setServices] = useState<Service[] | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -18,7 +18,14 @@ export function ClinicServices({ clinicId, photo, canBook }: { clinicId: string;
     return () => { active = false; };
   }, [clinicId]);
 
-  if (!services.length) return null;
+  if (!photo || !services?.length) {
+    return <section className="papp-section" aria-labelledby="practice-services-title">
+      <div className="block-head">
+        <h2 id="practice-services-title">{t('p.practiceServices')}</h2>
+        <Link className="text-link" to="/cjenovnik">{t('services.title')}</Link>
+      </div>
+    </section>;
+  }
   return (
     <section className="practice-services" aria-labelledby="practice-services-title">
       <img className="practice-room" src={photo} alt={t('p.treatmentRoom')} width={820} height={1093} loading="lazy" decoding="async" />

@@ -173,7 +173,7 @@ function TodayBlock({ clinicId }: { clinicId: string }) {
     to.setDate(to.getDate() + 1);
     api
       .appointments(clinicId, from.toISOString(), to.toISOString())
-      .then((r) => alive && setList(r.filter((a) => a.status !== 'otkazan')))
+      .then((r) => alive && setList(r.filter((a) => !a.is_private_block && a.status !== 'otkazan')))
       .catch(() => alive && setList([]));
     return () => {
       alive = false;

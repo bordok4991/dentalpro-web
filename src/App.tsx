@@ -92,7 +92,7 @@ function SignedIn() {
             <Shell>
               <Routes>
                 <Route path="/" element={<Overview />} />
-                <Route path="/calendar" element={<Calendar />} />
+                <Route path="/calendar" element={<Calendar key={current.clinic.id} />} />
                 <Route path="/team" element={<Team />} />
                 <Route path="/patients" element={<Patients />} />
                 <Route path="/patients/new" element={<PatientNew />} />

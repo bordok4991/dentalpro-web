@@ -129,7 +129,6 @@ export function PatientApp({ previewId }: { previewId?: string }) {
                 </span>
               </Link>
               <nav className="papp-practice-nav" aria-label={t('p.practiceNavigation')}>
-                <NavLink className="papp-price-link" to="/cjenovnik">{t('services.title')}</NavLink>
                 <NavLink className="papp-about-link" to="/o-nama">{t('p.aboutTitle')}</NavLink>
               </nav>
             </div>
@@ -239,7 +238,6 @@ function Home() {
               ) : canBook ? (
                 <Link className="practice-primary-action" to="/zakazi">{t('p.book')}</Link>
               ) : null}
-              <Link className="practice-price-action" to="/cjenovnik">{t('services.title')}</Link>
             </div>
           </div>
         </header>
@@ -284,7 +282,7 @@ function Home() {
         </section>
       )}
 
-      {c.services_photo_url && <ClinicServices key={c.id} clinicId={c.id} photo={c.services_photo_url} canBook={canBook} />}
+      <ClinicServices key={c.id} clinicId={c.id} photo={c.services_photo_url} canBook={canBook} />
 
       {posts && posts.length > 0 && (
         <section className="papp-section" aria-labelledby="p-news">

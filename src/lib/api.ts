@@ -296,17 +296,18 @@ export function makeApi(sb: SupabaseClient) {
 
     // ---------- Termini ----------
 
-    /** Termini ordinacije koji počinju u zadatom periodu [od, do). */
+    /** Svi termini koji se preklapaju sa prikazanim periodom [od, do). */
     async appointments(clinicId: string, fromIso: string, toIso: string): Promise<Appointment[]> {
-      const { data, error } = await sb
-        .from('appointments')
-        .select(APPT_COLS)
-        .eq('clinic_id', clinicId)
-        .gte('starts_at', fromIso)
-        .lt('starts_at', toIso)
-        .order('starts_at', { ascending: true });
-      if (error) throw error;
-      return (data ?? []) as unknown as Appointment[];
+      const rows: Appointment[] = [];
+      const pageSize = 500;
+      for (let offset = 0; ; offset += pageSize) {
+        const { data, error } = await sb.from('appointments').select(APPT_COLS)
+          .eq('clinic_id', clinicId).gt('ends_at', fromIso).lt('starts_at', toIso)
+          .order('starts_at').order('id').range(offset, offset + pageSize - 1);
+        if (error) throw error;
+        rows.push(...(data ?? []) as unknown as Appointment[]);
+        if (!data || data.length < pageSize) return rows;
+      }
     },
 
     /** Naredni termini jednog pacijenta (bez otkazanih). */
@@ -365,6 +366,13 @@ export function makeApi(sb: SupabaseClient) {
       const { data, error } = await sb.from('services').select(SERVICE_COLS).eq('clinic_id', clinicId).order('name');
       if (error) throw error;
       return (data ?? []) as Service[];
+    },
+
+    async setServiceDuration(clinicId: string, id: string, minutes: number): Promise<Service> {
+      const { data, error } = await sb.from('services').update({ duration_min: minutes })
+        .eq('id', id).eq('clinic_id', clinicId).select(SERVICE_COLS).single();
+      if (error) throw error;
+      return data as Service;
     },
 
     async saveService(clinicId: string, input: ServiceInput, id?: string): Promise<Service> {
@@ -834,11 +842,12 @@ export function inviteLink(token: string): string {
 
 const TOOTH_COLS = 'patient_id, clinic_id, tooth, condition, endo, surfaces, note, updated_at';
 const APPT_COLS =
-  'id, clinic_id, patient_id, doctor_id, starts_at, ends_at, service, note, status, created_at, booked_online, patient:patients(first_name, last_name, card_number, phone), doctor:profiles!appointments_doctor_id_fkey(full_name)';
+  'id, clinic_id, patient_id, doctor_id, starts_at, ends_at, service, note, status, created_at, booked_online, is_private_block, patient:patients(first_name, last_name, card_number, phone), doctor:profiles!appointments_doctor_id_fkey(full_name)';
 
 function cleanAppointment(a: AppointmentInput) {
   return {
     patient_id: a.patient_id,
+    is_private_block: a.is_private_block,
     doctor_id: a.doctor_id,
     starts_at: a.starts_at,
     ends_at: a.ends_at,

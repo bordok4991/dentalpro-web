@@ -1,21 +1,17 @@
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { todayIso, useI18n, type Key } from '../lib/i18n';
+import { useI18n, type Key } from '../lib/i18n';
 import { errorKey } from '../lib/errors';
 import { api, useSession } from '../lib/session';
-import { APPOINTMENT_STATUSES, CLINICAL_ROLES, type Appointment, type AppointmentStatus, type Patient } from '../lib/types';
+import { addDays, shiftMonth } from '../lib/format';
+import { calendarRange, clinicInstant, clinicTime, validDay, validDuration, type CalendarView } from '../lib/schedule';
+import { APPOINTMENT_STATUSES, CLINICAL_ROLES, type Appointment, type AppointmentStatus, type Patient, type Service } from '../lib/types';
 import { Button, Field, Loading, Notice, SelectField, TextField } from '../components/ui';
-
-const HOUR = 64; // visina jednog sata u kalendaru, u pikselima
-const DURATIONS = [15, 20, 30, 45, 60, 90, 120];
-
-interface Doctor {
-  id: string;
-  name: string;
-}
+import { CalendarBoard, type CalendarDoctor } from '../components/CalendarBoard';
 
 interface FormInit {
   id?: string;
+  block: boolean;
   patient: Pick<Patient, 'id' | 'first_name' | 'last_name' | 'card_number'> | null;
   doctorId: string;
   day: string;
@@ -26,308 +22,194 @@ interface FormInit {
 }
 
 export function Calendar() {
-  const { t } = useI18n();
-  const { current } = useSession();
+  const { t, date } = useI18n();
+  const { current, user } = useSession();
   const [params, setParams] = useSearchParams();
-  const day = /^\d{4}-\d{2}-\d{2}$/.test(params.get('dan') ?? '') ? (params.get('dan') as string) : todayIso();
+  const zone = current?.clinic.timezone || 'Europe/Sarajevo';
+  const today = clinicTime(new Date(), zone).day;
+  const requestedDay = params.get('dan');
+  const day = validDay(requestedDay) ? requestedDay : today;
+  const requestedView = params.get('prikaz');
+  const view: CalendarView = requestedView === 'dan' || requestedView === 'mjeseci' ? requestedView : 'sedmica';
+  const { from, to } = calendarRange(day, view);
   const preselect = params.get('pacijent');
   const clinicId = current?.clinic.id ?? '';
-
-  const [doctors, setDoctors] = useState<Doctor[] | null>(null);
+  const [doctors, setDoctors] = useState<CalendarDoctor[] | null>(null);
+  const [services, setServices] = useState<Service[]>([]);
   const [appts, setAppts] = useState<Appointment[] | null>(null);
   const [error, setError] = useState<Key | null>(null);
+  const [loadError, setLoadError] = useState<Key | null>(null);
+  const [revision, setRevision] = useState(0);
+  const [filter, setFilter] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [form, setForm] = useState<FormInit | null>(null);
   const [showCancelled, setShowCancelled] = useState(false);
+  const side = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!clinicId) return;
     let alive = true;
-    api
-      .members(clinicId)
-      .then((ms) => {
-        if (!alive) return;
-        setDoctors(
-          ms
-            .filter((m) => m.is_active && CLINICAL_ROLES.includes(m.role))
-            .map((m) => ({ id: m.user_id, name: m.profile?.full_name || m.profile?.email || '' })),
-        );
-      })
-      .catch((e) => alive && setError(errorKey(e)));
-    return () => {
-      alive = false;
-    };
+    setError(null);
+    api.members(clinicId).then((members) => {
+      if (alive) setDoctors(members.filter((m) => m.is_active && CLINICAL_ROLES.includes(m.role)).map((m) =>
+        ({ id: m.user_id, name: m.profile?.full_name || m.profile?.email || '', active: true })));
+    }).catch((err) => alive && setError(errorKey(err)));
+    api.services(clinicId).then((list) => alive && setServices(list.filter((s) => s.is_active)))
+      .catch((err) => alive && setError(errorKey(err)));
+    return () => { alive = false; };
   }, [clinicId]);
 
-  const reload = useCallback(async () => {
-    if (!clinicId) return;
-    const from = new Date(day + 'T00:00:00');
-    const to = new Date(from);
-    to.setDate(to.getDate() + 1);
-    try {
-      setAppts(await api.appointments(clinicId, from.toISOString(), to.toISOString()));
-    } catch (e) {
-      setAppts([]);
-      setError(errorKey(e));
-    }
-  }, [clinicId, day]);
-
   useEffect(() => {
+    if (!clinicId) return;
+    let alive = true;
     setAppts(null);
-    setSelectedId(null);
-    void reload();
-  }, [reload]);
+    setLoadError(null);
+    const start = clinicInstant(from, '00:00', zone);
+    const end = clinicInstant(to, '00:00', zone);
+    if (!start || !end) { setLoadError('cal.timeInvalid'); return; }
+    api.appointments(clinicId, start.toISOString(), end.toISOString())
+      .then((rows) => alive && setAppts(rows))
+      .catch((err) => alive && setLoadError(errorKey(err)));
+    return () => { alive = false; };
+  }, [clinicId, from, to, zone, revision]);
 
-  // Iz kartona: "Zakaži termin" otvara obrazac s već izabranim pacijentom.
+  function newForm(d: string, time: string, doctorId: string, block = false, patient: FormInit['patient'] = null) {
+    const self = doctors?.find((m) => m.id === user?.id);
+    setSelectedId(null);
+    setForm({ block, patient, doctorId: doctorId || filter || self?.id || (doctors?.length === 1 ? doctors[0].id : ''),
+      day: d, time, minutes: block ? 60 : 30, service: '', note: '' });
+  }
+
   useEffect(() => {
     if (!preselect || !doctors) return;
     let alive = true;
     api.patient(preselect).then((p) => {
       if (!alive || !p) return;
-      setSelectedId(null);
-      setForm(blankForm(day, doctors, p));
+      newForm(day, '10:00', '', false, p);
       const next = new URLSearchParams(params);
       next.delete('pacijent');
       setParams(next, { replace: true });
-    });
-    return () => {
-      alive = false;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }).catch((err) => alive && setError(errorKey(err)));
+    return () => { alive = false; };
   }, [preselect, doctors]);
 
-  function goto(d: string) {
+  useEffect(() => {
+    if ((form || selectedId) && window.matchMedia('(max-width: 1050px)').matches) side.current?.scrollIntoView({ block: 'start' });
+  }, [form, selectedId]);
+
+  function navigate(d: string, mode = view) {
     const next = new URLSearchParams(params);
-    if (d === todayIso()) next.delete('dan');
-    else next.set('dan', d);
+    if (d === today) next.delete('dan'); else next.set('dan', d);
+    if (mode === 'sedmica') next.delete('prikaz'); else next.set('prikaz', mode);
+    setForm(null);
+    setSelectedId(null);
     setParams(next);
   }
 
-  const columns = useMemo(() => {
-    const cols = [...(doctors ?? [])];
+  const providers = useMemo(() => {
+    const list = [...(doctors ?? [])];
     for (const a of appts ?? []) {
-      if (!cols.some((c) => c.id === a.doctor_id)) cols.push({ id: a.doctor_id, name: a.doctor?.full_name ?? '' });
+      if (!list.some((d) => d.id === a.doctor_id)) list.push({ id: a.doctor_id, name: a.doctor?.full_name ?? '', active: false });
     }
-    return cols;
+    return list;
   }, [doctors, appts]);
 
+  const visible = useMemo(() => (appts ?? []).filter((a) =>
+    (!filter || filter === a.doctor_id) && (showCancelled || a.status !== 'otkazan')), [appts, filter, showCancelled]);
   if (!current) return null;
-
-  const visible = (appts ?? []).filter((a) => showCancelled || a.status !== 'otkazan');
-  const active = (appts ?? []).filter((a) => a.status !== 'otkazan' && a.status !== 'nije_dosao');
-  const selected = (appts ?? []).find((a) => a.id === selectedId) ?? null;
-
-  let startHour = 7;
-  let endHour = 20;
-  for (const a of visible) {
-    const s = new Date(a.starts_at);
-    const e = new Date(a.ends_at);
-    startHour = Math.min(startHour, s.getHours());
-    endHour = Math.max(endHour, e.getHours() + (e.getMinutes() > 0 ? 1 : 0));
-  }
-  const hours = Array.from({ length: endHour - startHour }, (_, i) => startHour + i);
-  const pos = (iso: string) => {
-    const d = new Date(iso);
-    return ((d.getHours() - startHour) * 60 + d.getMinutes()) * (HOUR / 60);
-  };
-  const isToday = day === todayIso();
-  const now = new Date();
-  const nowTop = ((now.getHours() - startHour) * 60 + now.getMinutes()) * (HOUR / 60);
-  const dd = new Date(day + 'T00:00:00');
-  const longDate = t('cal.long', {
-    weekday: t('cal.weekdays').split('|')[dd.getDay()],
-    day: dd.getDate(),
-    month: t('cal.months').split('|')[dd.getMonth()],
-    year: dd.getFullYear(),
-  });
-
+  const active = visible.filter((a) => !['otkazan', 'nije_dosao'].includes(a.status));
+  const selected = appts?.find((a) => a.id === selectedId);
+  const last = addDays(to, -1);
+  const monthLabel = (d: string) => t('cal.months').split('|')[Number(d.slice(5, 7)) - 1] + ' ' + d.slice(0, 4);
+  const title = view === 'mjeseci' ? monthLabel(from) + ' – ' + monthLabel(last) :
+    view === 'sedmica' ? date(from) + ' – ' + date(last) : date(day);
   function shift(n: number) {
-    const d = new Date(day + 'T00:00:00');
-    d.setDate(d.getDate() + n);
-    goto(isoDay(d));
+    navigate(view === 'mjeseci' ? shiftMonth(day, n) : addDays(day, n * (view === 'sedmica' ? 7 : 1)));
   }
 
-  function upsert(a: Appointment) {
-    setAppts((list) => {
-      const rest = (list ?? []).filter((x) => x.id !== a.id);
-      return localDay(a.starts_at) === day ? [...rest, a].sort((x, y) => x.starts_at.localeCompare(y.starts_at)) : rest;
-    });
+  function saved(a: Appointment) {
+    const d = clinicTime(a.starts_at, zone).day;
+    if (d !== day) navigate(d);
+    if (filter && filter !== a.doctor_id) setFilter(a.doctor_id);
+    setForm(null);
+    setSelectedId(a.id);
+    setRevision((v) => v + 1);
   }
 
-  return (
-    <>
-      <header className="page-head page-head-row">
-        <div>
-          <h1>{t('cal.title')}</h1>
-          <p className="lead cal-date">{longDate}</p>
-        </div>
-        <Button
-          onClick={() => {
-            setSelectedId(null);
-            setForm(blankForm(day, doctors ?? [], null));
-          }}
-          disabled={!doctors || doctors.length === 0}
-        >
-          {t('cal.new')}
-        </Button>
-      </header>
-
+  return <>
+    <header className="page-head cal-header">
+      <div><h1>{t('cal.title')}</h1><p className="lead cal-date">{title}</p></div>
+      <div className="row">
+        <Button variant="quiet" onClick={() => newForm(day, '10:00', '', true)} disabled={!doctors?.length}>{t('cal.block')}</Button>
+        <Button onClick={() => newForm(day, '10:00', '')} disabled={!doctors?.length}>{t('cal.new')}</Button>
+      </div>
+    </header>
+    <div className="cal-tools">
       <div className="cal-bar">
-        <div className="row">
-          <button type="button" className="icon-btn" aria-label={t('cal.prev')} onClick={() => shift(-1)}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="m15 18-6-6 6-6" />
-            </svg>
-          </button>
-          <Button variant="quiet" onClick={() => goto(todayIso())} disabled={isToday}>
-            {t('cal.today')}
-          </Button>
-          <button type="button" className="icon-btn" aria-label={t('cal.next')} onClick={() => shift(1)}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="m9 18 6-6-6-6" />
-            </svg>
-          </button>
-          <label className="cal-pick">
-            <span className="sr-only">{t('cal.pickDate')}</span>
-            <input type="date" value={day} onChange={(e) => e.target.value && goto(e.target.value)} />
-          </label>
+        <div className="row cal-navigation">
+          <button type="button" className="icon-btn" aria-label={t('cal.prevRange')} onClick={() => shift(-1)}>‹</button>
+          <Button variant="quiet" onClick={() => navigate(today)}>{t('cal.today')}</Button>
+          <button type="button" className="icon-btn" aria-label={t('cal.nextRange')} onClick={() => shift(1)}>›</button>
+          <label className="cal-pick"><span className="sr-only">{t('cal.pickDate')}</span>
+            <input type="date" value={day} onChange={(e) => validDay(e.target.value) && navigate(e.target.value)} /></label>
         </div>
-        <div className="row">
-          <span className="muted">{t('cal.count', { n: active.length })}</span>
-          <label className="check">
-            <input type="checkbox" checked={showCancelled} onChange={(e) => setShowCancelled(e.target.checked)} />
-            {t('cal.showCancelled')}
-          </label>
+        <div className="cal-views" role="group" aria-label={t('cal.views')}>
+          {(['dan', 'sedmica', 'mjeseci'] as const).map((mode) => <button key={mode} type="button" aria-pressed={mode === view}
+            onClick={() => navigate(day, mode)}>{t(mode === 'dan' ? 'cal.dayView' : mode === 'sedmica' ? 'cal.weekView' : 'cal.monthView')}</button>)}
         </div>
       </div>
-
-      {error && <Notice kind="error">{t(error)}</Notice>}
-      {doctors && doctors.length === 0 && <Notice kind="info">{t('cal.noDoctors')}</Notice>}
-
-      <div className={form || selected ? 'cal-layout cal-layout-open' : 'cal-layout'}>
-        <section className="block cal-board" aria-label={longDate}>
-          {appts === null || doctors === null ? (
-            <Loading />
-          ) : (
-            <div className="cal-scroll">
-              <div className="cal-grid" style={{ ['--cols' as string]: Math.max(columns.length, 1) }}>
-                <div className="cal-corner" />
-                {columns.map((c) => (
-                  <div key={c.id} className="cal-colhead">
-                    <strong>{c.name}</strong>
-                    <span className="muted">{t('cal.count', { n: active.filter((a) => a.doctor_id === c.id).length })}</span>
-                  </div>
-                ))}
-                <div className="cal-times" style={{ height: hours.length * HOUR }} aria-hidden="true">
-                  {hours.map((h) => (
-                    <span key={h} style={{ top: (h - startHour) * HOUR }}>
-                      {String(h).padStart(2, '0')}:00
-                    </span>
-                  ))}
-                </div>
-                {columns.map((c) => (
-                  <div key={c.id} className="cal-col" style={{ height: hours.length * HOUR, ['--hour' as string]: `${HOUR}px` }}>
-                    {visible
-                      .filter((a) => a.doctor_id === c.id)
-                      .map((a) => {
-                        const top = pos(a.starts_at);
-                        const height = Math.max(pos(a.ends_at) - top - 3, 22);
-                        return (
-                          <button
-                            key={a.id}
-                            type="button"
-                            className={`appt appt-st-${a.status}${height < 44 ? ' appt-short' : ''}`}
-                            style={{ top, height }}
-                            aria-pressed={selectedId === a.id}
-                            onClick={() => {
-                              setForm(null);
-                              setSelectedId(a.id);
-                            }}
-                          >
-                            <strong>
-                              {hhmm(a.starts_at)} {a.patient ? `${a.patient.first_name} ${a.patient.last_name}` : ''}
-                            </strong>
-                            <span>{a.service}</span>
-                            {height >= 60 && (
-                              <span className="appt-status">
-                                {t(`cal.status.${a.status}` as Key)}
-                                {a.booked_online && ` · ${t('cal.online')}`}
-                              </span>
-                            )}
-                          </button>
-                        );
-                      })}
-                  </div>
-                ))}
-                {isToday && nowTop > 0 && nowTop < hours.length * HOUR && <div className="cal-now" style={{ top: nowTop }} aria-hidden="true" />}
-              </div>
-              {visible.length === 0 && <p className="muted cal-empty">{t('cal.empty')}</p>}
-            </div>
-          )}
-        </section>
-
-        {form && doctors && (
-          <AppointmentForm
-            key={form.id ?? 'novi'}
-            clinicId={clinicId}
-            doctors={doctors}
-            init={form}
-            onCancel={() => setForm(null)}
-            onSaved={(a) => {
-              upsert(a);
-              setForm(null);
-              if (localDay(a.starts_at) !== day) goto(localDay(a.starts_at));
-              setSelectedId(a.id);
-            }}
-          />
-        )}
-
-        {selected && !form && (
-          <AppointmentDetails
-            appt={selected}
-            onClose={() => setSelectedId(null)}
-            onChanged={upsert}
-            onEdit={() => {
-              const s = new Date(selected.starts_at);
-              setForm({
-                id: selected.id,
-                patient: selected.patient ? { id: selected.patient_id, ...selected.patient } : null,
-                doctorId: selected.doctor_id,
-                day: localDay(selected.starts_at),
-                time: hhmm(selected.starts_at),
-                minutes: Math.round((new Date(selected.ends_at).getTime() - s.getTime()) / 60000),
-                service: selected.service,
-                note: selected.note ?? '',
-              });
-            }}
-          />
-        )}
+      <div className="cal-bar cal-filters">
+        <div className="row">
+          {providers.length > 1 && <label><span className="sr-only">{t('appt.doctor')}</span><select value={filter}
+            onChange={(e) => { setFilter(e.target.value); setSelectedId(null); setForm(null); }}>
+            <option value="">{t('cal.allDoctors')}</option>{providers.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+          </select></label>}
+          {providers.length === 1 && <strong>{providers[0].name}</strong>}
+          {appts && <span>{t('cal.count', { n: active.filter((a) => !a.is_private_block).length })} · {t('cal.blocksCount', { n: active.filter((a) => a.is_private_block).length })}</span>}
+        </div>
+        <div className="row">
+        {current.role === 'owner' && <Link className="text-link" to="/settings#trajanje-usluga">{t('cal.viewSettings')}</Link>}
+        <label className="check"><input type="checkbox" checked={showCancelled} onChange={(e) => setShowCancelled(e.target.checked)} />{t('cal.showCancelled')}</label></div>
       </div>
-    </>
-  );
+    </div>
+    {error && <Notice kind="error">{t(error)}</Notice>}
+    {doctors?.length === 0 && <Notice kind="info">{t('cal.noDoctors')}</Notice>}
+    <div className={'cal-layout' + (form || selected ? ' cal-layout-open' : '')}>
+      <section className="block cal-board" aria-label={title}>
+        {loadError ? <Notice kind="error">{t(loadError)} <button type="button" className="link-btn" onClick={() => setRevision((v) => v + 1)}>{t('common.retry')}</button></Notice> : !appts || !doctors ? <Loading /> : <>
+          <CalendarBoard view={view} from={from} today={today} zone={zone} doctors={providers.filter((d) => !filter || d.id === filter)}
+            events={visible} workingHours={current.clinic.working_hours ?? {}} selected={selectedId}
+            onNew={(d, time, doctor) => newForm(d, time, doctor)} onDay={(d) => navigate(d, 'dan')}
+            onOpen={(id) => { setForm(null); setSelectedId(id); }}/>
+          <p className="muted cal-footer">{!visible.length && <span>{t('cal.rangeEmpty')}</span>}<span>{t('cal.zone', { zone })}</span></p>
+        </>}
+      </section>
+      {(form || selected) && <div className="cal-inspector" ref={side}>
+        {form && doctors ? <AppointmentForm key={[form.id, form.block, form.day, form.time, form.doctorId].join('/')} init={form}
+          clinicId={clinicId} doctors={doctors} services={services} zone={zone} onCancel={() => setForm(null)} onSaved={saved} /> :
+          selected && <AppointmentDetails key={selected.id} appt={selected} zone={zone} onClose={() => setSelectedId(null)}
+            onChanged={saved} onEdit={() => {
+              const wall = clinicTime(selected.starts_at, zone);
+              setForm({ ...wall, id: selected.id, block: selected.is_private_block,
+                patient: selected.patient_id && selected.patient ? { id: selected.patient_id, ...selected.patient } : null,
+                doctorId: selected.doctor_id, service: selected.service, note: selected.note ?? '',
+                minutes: (Date.parse(selected.ends_at) - Date.parse(selected.starts_at)) / 60000 });
+            }}/>}
+      </div>}
+    </div>
+  </>;
 }
-
-function blankForm(day: string, doctors: Doctor[], patient: Patient | null): FormInit {
-  return {
-    patient: patient ? { id: patient.id, first_name: patient.first_name, last_name: patient.last_name, card_number: patient.card_number } : null,
-    doctorId: doctors.length === 1 ? doctors[0].id : '',
-    day,
-    time: '10:00',
-    minutes: 30,
-    service: '',
-    note: '',
-  };
-}
-
 /* ---------- Detalji termina ---------- */
 
 function AppointmentDetails({
   appt,
+  zone,
   onClose,
   onChanged,
   onEdit,
 }: {
   appt: Appointment;
+  zone: string;
   onClose: () => void;
   onChanged: (a: Appointment) => void;
   onEdit: () => void;
@@ -350,7 +232,7 @@ function AppointmentDetails({
     }
   }
 
-  const name = appt.patient ? `${appt.patient.first_name} ${appt.patient.last_name}` : '';
+  const name = appt.is_private_block ? t('cal.blocked') : appt.patient ? `${appt.patient.first_name} ${appt.patient.last_name}` : '';
   return (
     <aside className="block cal-side" aria-label={t('cal.edit')}>
       <div className="block-head">
@@ -363,15 +245,16 @@ function AppointmentDetails({
       <dl className="facts">
         <dt>{t('appt.date')}</dt>
         <dd>
-          {date(appt.starts_at)}, {hhmm(appt.starts_at)}–{hhmm(appt.ends_at)}
+          {date(clinicTime(appt.starts_at, zone).day)}, {clinicTime(appt.starts_at, zone).time}–{clinicTime(appt.ends_at, zone).time}
         </dd>
         <dt>{t('appt.doctor')}</dt>
         <dd>{appt.doctor?.full_name}</dd>
-        <dt>{t('appt.service')}</dt>
+        {!appt.is_private_block && <><dt>{t('appt.service')}</dt>
         <dd>
           {appt.service}
           {appt.booked_online && <span className="tag">{t('cal.bookedOnline')}</span>}
         </dd>
+        </>}
         {appt.patient?.phone && (
           <>
             <dt>{t('patient.phone')}</dt>
@@ -388,7 +271,7 @@ function AppointmentDetails({
         )}
       </dl>
 
-      <fieldset className="seg">
+      {!appt.is_private_block && <fieldset className="seg">
         <legend>{t('cal.setStatus')}</legend>
         <div className="seg-row">
           {APPOINTMENT_STATUSES.filter((s) => s !== 'otkazan').map((s) => (
@@ -397,12 +280,12 @@ function AppointmentDetails({
             </button>
           ))}
         </div>
-      </fieldset>
+      </fieldset>}
 
       <div className="row">
-        <Link className="btn btn-quiet" to={`/patients/${appt.patient_id}`}>
+        {appt.patient_id && <Link className="btn btn-quiet" to={`/patients/${appt.patient_id}`}>
           {t('cal.openKarton')}
-        </Link>
+        </Link>}
         {appt.status !== 'otkazan' && (
           <Button variant="quiet" onClick={onEdit}>
             {t('cal.edit')}
@@ -410,11 +293,11 @@ function AppointmentDetails({
         )}
       </div>
       {appt.status === 'otkazan' ? (
-        <p className="muted">{t('cal.status.otkazan')}</p>
+        <p className="muted">{t(appt.is_private_block ? 'cal.released' : 'cal.status.otkazan')}</p>
       ) : confirming ? (
         <div className="row">
           <Button variant="danger" busy={busy === 'otkazan'} onClick={() => void setStatus('otkazan')}>
-            {t('cal.confirmCancel')}
+            {t(appt.is_private_block ? 'cal.confirmRelease' : 'cal.confirmCancel')}
           </Button>
           <Button variant="quiet" onClick={() => setConfirming(false)}>
             {t('common.cancel')}
@@ -422,7 +305,7 @@ function AppointmentDetails({
         </div>
       ) : (
         <button type="button" className="link-btn danger-link" onClick={() => setConfirming(true)}>
-          {t('cal.cancel')}
+          {t(appt.is_private_block ? 'cal.release' : 'cal.cancel')}
         </button>
       )}
     </aside>
@@ -434,12 +317,16 @@ function AppointmentDetails({
 function AppointmentForm({
   clinicId,
   doctors,
+  services,
+  zone,
   init,
   onSaved,
   onCancel,
 }: {
   clinicId: string;
-  doctors: Doctor[];
+  doctors: CalendarDoctor[];
+  services: Service[];
+  zone: string;
   init: FormInit;
   onSaved: (a: Appointment) => void;
   onCancel: () => void;
@@ -450,10 +337,26 @@ function AppointmentForm({
   const [found, setFound] = useState<Patient[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<Key | null>(null);
-  const services = t('appt.services').split('|');
+  const [selectedService, setSelectedService] = useState(() => services.find((s) => s.name === init.service)?.id ?? (init.service || !services.length ? 'custom' : ''));
+  const [slots, setSlots] = useState<string[] | null>(null);
+  const [slotError, setSlotError] = useState<Key | null>(null);
+  const [refreshSlots, setRefreshSlots] = useState(0);
+  const provider = doctors.find((d) => d.id === v.doctorId);
+  const offerSlots = !v.id && !!provider?.active && validDay(v.day) && (validDuration(v.minutes) || (v.block && Number.isInteger(v.minutes) && v.minutes > 480 && v.minutes <= 720));
+  const start = clinicInstant(v.day, v.time, zone);
+  const end = start && v.minutes > 0 ? clinicTime(new Date(start.getTime() + v.minutes * 60000), zone) : null;
+  const title = t(v.block ? (v.id ? 'cal.editBlock' : 'cal.block') : (v.id ? 'cal.edit' : 'cal.new'));
+  useEffect(() => {
+    let active = true;
+    setSlots(null);
+    setSlotError(null);
+    if (offerSlots) api.slots(clinicId, v.doctorId, v.day, v.minutes)
+      .then((list) => active && setSlots(list)).catch((err) => active && setSlotError(errorKey(err)));
+    return () => { active = false; };
+  }, [offerSlots, clinicId, v.doctorId, v.day, v.minutes, refreshSlots]);
 
   useEffect(() => {
-    if (v.patient) return;
+    if (v.block || v.patient) return;
     const q = query.trim();
     if (!q) {
       setFound(null);
@@ -470,23 +373,25 @@ function AppointmentForm({
       alive = false;
       window.clearTimeout(id);
     };
-  }, [query, clinicId, v.patient]);
+  }, [query, clinicId, v.patient, v.block]);
 
   async function submit(e: FormEvent) {
     e.preventDefault();
     setError(null);
-    if (!v.patient) return setError('err.pickPatient');
+    if (!v.block && !v.patient) return setError('err.pickPatient');
     if (!v.doctorId) return setError('err.pickDoctor');
-    if (!v.service.trim()) return setError('err.service');
-    const start = new Date(`${v.day}T${v.time}:00`);
-    if (Number.isNaN(start.getTime())) return setError('err.apptTime');
-    const end = new Date(start.getTime() + v.minutes * 60000);
+    if (!v.block && !v.service.trim()) return setError('cal.blankService');
+    const limit = v.block || (v.id && init.minutes > 480) ? 720 : 480;
+    if (!Number.isInteger(v.minutes) || v.minutes < 5 || v.minutes > limit) return setError(v.block ? 'cal.blockDurationError' : 'cal.durationError');
+    if (!start) return setError('cal.timeInvalid');
+    const finish = new Date(start.getTime() + v.minutes * 60000);
     const input = {
-      patient_id: v.patient.id,
+      patient_id: v.block ? null : v.patient!.id,
+      is_private_block: v.block,
       doctor_id: v.doctorId,
       starts_at: start.toISOString(),
-      ends_at: end.toISOString(),
-      service: v.service,
+      ends_at: finish.toISOString(),
+      service: v.block ? 'Blokirano vrijeme' : v.service,
       note: v.note,
     };
     setBusy(true);
@@ -494,22 +399,27 @@ function AppointmentForm({
       onSaved(v.id ? await api.updateAppointment(v.id, input) : await api.createAppointment(clinicId, input));
     } catch (err) {
       setError(errorKey(err));
+      setRefreshSlots((n) => n + 1);
       setBusy(false);
     }
   }
 
   return (
-    <aside className="block cal-side" aria-label={v.id ? t('cal.edit') : t('cal.new')}>
+    <aside className="block cal-side" aria-label={title}>
       <form className="form-grid" onSubmit={submit} noValidate>
         <div className="block-head">
-          <h2>{v.id ? t('cal.edit') : t('cal.new')}</h2>
+          <h2>{title}</h2>
           <button type="button" className="link-btn" onClick={onCancel}>
             {t('common.cancel')}
           </button>
         </div>
         {error && <Notice kind="error">{t(error)}</Notice>}
 
-        {v.patient ? (
+        {!v.id && !init.patient && <div className="cal-views cal-form-mode">
+          <button type="button" aria-pressed={!v.block} onClick={() => { setV({ ...v, block: false }); setError(null); }}>{t('cal.new')}</button>
+          <button type="button" aria-pressed={v.block} onClick={() => { setV({ ...v, block: true }); setError(null); }}>{t('cal.blocked')}</button>
+        </div>}
+        {v.block ? <p className="hint">{t('cal.blockHint')}</p> : v.patient ? (
           <div className="picked">
             <span>
               <span className="muted">{t('appt.patient')}</span>
@@ -561,43 +471,43 @@ function AppointmentForm({
             </option>
           ))}
         </SelectField>
+        {!v.block && <>
+          {!!services.length && <SelectField label={t('appt.service')} value={selectedService} onChange={(e) => {
+            const id = e.target.value;
+            const chosen = services.find((s) => s.id === id);
+            setSelectedService(id);
+            setV({ ...v, service: chosen?.name ?? '', minutes: chosen?.duration_min ?? v.minutes });
+          }}>
+            <option value="">{t('cal.chooseService')}</option>
+            {services.map((s) => <option key={s.id} value={s.id}>{s.name} · {t('services.minutes', { n: s.duration_min })}</option>)}
+            <option value="custom">{t('cal.customService')}</option>
+          </SelectField>}
+          {(!services.length || selectedService === 'custom') && <Field label={t(services.length ? 'cal.serviceName' : 'appt.service')} maxLength={120} value={v.service}
+            onChange={(e) => setV({ ...v, service: e.target.value })} />}
+        </>}
+        <Field label={t('appt.duration')} type="number" min={5} max={v.block ? 720 : 480} step={1}
+          hint={!v.block && !!services.length ? t('cal.durationHint') : undefined}
+          value={v.minutes || ''} onChange={(e) => setV({ ...v, minutes: Number(e.target.value) })} />
         <div className="grid-2">
           <Field label={t('appt.date')} type="date" value={v.day} onChange={(e) => setV({ ...v, day: e.target.value })} />
-          <Field label={t('appt.time')} type="time" step={300} value={v.time} onChange={(e) => setV({ ...v, time: e.target.value })} />
+          <Field label={t('appt.time')} type="time" value={v.time} onChange={(e) => setV({ ...v, time: e.target.value })} />
         </div>
-        <SelectField label={t('appt.duration')} value={String(v.minutes)} onChange={(e) => setV({ ...v, minutes: Number(e.target.value) })}>
-          {DURATIONS.map((m) => (
-            <option key={m} value={m}>
-              {t('appt.minutes', { n: m })}
-            </option>
-          ))}
-        </SelectField>
-        <Field label={t('appt.service')} hint={t('appt.serviceHint')} list="appt-services" value={v.service} onChange={(e) => setV({ ...v, service: e.target.value })} />
-        <datalist id="appt-services">
-          {services.map((s) => (
-            <option key={s} value={s} />
-          ))}
-        </datalist>
-        <TextField label={t('appt.note')} rows={2} value={v.note} onChange={(e) => setV({ ...v, note: e.target.value })} />
+        {end && <p className="cal-end"><strong>{t('cal.until')}</strong> {end.day === v.day ? end.time : t('cal.endNext', { time: end.time })}</p>}
+        {offerSlots && <fieldset className="cal-available">
+          <legend>{t('cal.slots')}</legend>
+          {slotError ? <Notice kind="error">{t(slotError)}</Notice> : slots === null ? <Loading /> : slots.length === 0 ? <p className="hint">{t('cal.noSlots')}</p> :
+            <div className="cal-slot-list">{slots.map((iso) => {
+              const time = clinicTime(iso, zone).time;
+              return <button key={iso} type="button" aria-pressed={time === v.time} onClick={() => setV({ ...v, time })}>{time}</button>;
+            })}</div>}
+        </fieldset>}
+        <TextField label={t(v.block ? 'cal.blockNote' : 'appt.note')} rows={2} maxLength={1000} value={v.note} onChange={(e) => setV({ ...v, note: e.target.value })} />
         <div className="row">
           <Button type="submit" busy={busy}>
-            {v.id ? t('appt.saveEdit') : t('appt.save')}
+            {t(v.id ? 'appt.saveEdit' : v.block ? 'cal.block' : 'appt.save')}
           </Button>
         </div>
       </form>
     </aside>
   );
-}
-
-function hhmm(iso: string): string {
-  const d = new Date(iso);
-  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-}
-
-function isoDay(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
-
-function localDay(iso: string): string {
-  return isoDay(new Date(iso));
 }

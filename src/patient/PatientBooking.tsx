@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { todayIso, useI18n, type Key } from '../lib/i18n';
+import { useI18n, type Key } from '../lib/i18n';
 import { errorKey } from '../lib/errors';
-import { addDays, hhmm, money } from '../lib/format';
+import { addDays, money } from '../lib/format';
+import { clinicTime } from '../lib/schedule';
 import { api, useSession } from '../lib/session';
 import type { Doctor, MyAppointment, Service } from '../lib/types';
 import { Avatar } from '../components/Avatar';
@@ -12,10 +13,13 @@ import { NotLinked, usePatient } from './PatientApp';
 /** Dugi datum: "srijeda, 18. novembar" (bez Intl, radi i bez bosanskog u pregledniku). */
 export function useLongDate() {
   const { t } = useI18n();
+  const { current } = useSession();
+  const zone = current?.clinic.timezone || 'Europe/Sarajevo';
   const days = t('cal.weekdays').split('|');
   const months = t('cal.months').split('|');
   return (iso: string, withYear = false) => {
-    const d = new Date(/^\d{4}-\d{2}-\d{2}$/.test(iso) ? iso + 'T12:00:00' : iso);
+    const day = /^\d{4}-\d{2}-\d{2}$/.test(iso) ? iso : clinicTime(iso, zone).day;
+    const d = new Date(day + 'T12:00:00');
     return t(withYear ? 'p.longDateYear' : 'p.longDate', { weekday: days[d.getDay()], day: d.getDate(), month: months[d.getMonth()], year: d.getFullYear() });
   };
 }
@@ -34,6 +38,7 @@ export function AppointmentCard({ appt, highlight }: { appt: MyAppointment; high
   const future = start.getTime() > Date.now();
   const canCancel = ['zakazan', 'potvrdjen'].includes(appt.status) && start.getTime() - Date.now() > 24 * 3600_000;
   const phone = current?.clinic.phone;
+  const zone = current?.clinic.timezone || 'Europe/Sarajevo';
 
   async function run(kind: 'confirm' | 'cancel') {
     if (preview) {
@@ -57,11 +62,11 @@ export function AppointmentCard({ appt, highlight }: { appt: MyAppointment; high
   return (
     <div className={`pcard appt-card${highlight ? ' appt-card-next' : ''}${appt.status === 'otkazan' ? ' appt-card-off' : ''}`}>
       <div className="appt-card-when">
-        <span className="appt-card-day">{start.getDate()}</span>
+        <span className="appt-card-day">{Number(clinicTime(start, zone).day.slice(-2))}</span>
         <span>
           <strong>{long(appt.starts_at)}</strong>
           <span>
-            {hhmm(appt.starts_at)}–{hhmm(appt.ends_at)}
+            {clinicTime(appt.starts_at, zone).time}–{clinicTime(appt.ends_at, zone).time}
           </span>
         </span>
       </div>
@@ -199,7 +204,7 @@ export function Booking() {
     if (!clinic) return [];
     const out: string[] = [];
     for (let i = 0; i < 28 && out.length < 14; i++) {
-      const d = addDays(todayIso(), i);
+      const d = addDays(clinicTime(new Date(), clinic.timezone).day, i);
       const dow = String(new Date(d + 'T12:00:00').getDay()) as keyof typeof clinic.working_hours;
       if (clinic.working_hours?.[dow]) out.push(d);
     }
@@ -254,7 +259,7 @@ export function Booking() {
         </span>
         <h1>{t('p.bookedTitle')}</h1>
         <p>
-          <strong>{long(done.start)}</strong>, {hhmm(done.start)}
+          <strong>{long(done.start)}</strong>, {clinicTime(done.start, clinic.timezone).time}
         </p>
         <p>
           {done.service}
@@ -363,7 +368,7 @@ export function Booking() {
             <div className="slot-grid" role="radiogroup" aria-labelledby="b-time">
               {slots.map((s) => (
                 <button key={s} type="button" role="radio" aria-checked={slot === s} className="slot" onClick={() => setSlot(s)}>
-                  {hhmm(s)}
+                  {clinicTime(s, clinic.timezone).time}
                 </button>
               ))}
             </div>
@@ -375,7 +380,7 @@ export function Booking() {
         <section className="papp-section pcard" aria-labelledby="b-confirm">
           <h2 id="b-confirm">{t('p.stepConfirm')}</h2>
           <p>
-            <strong>{long(slot)}</strong>, {hhmm(slot)}
+            <strong>{long(slot)}</strong>, {clinicTime(slot, clinic.timezone).time}
             <br />
             {service.name} · {doctor.full_name}
           </p>
