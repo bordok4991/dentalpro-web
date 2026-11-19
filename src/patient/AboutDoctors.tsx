@@ -123,29 +123,20 @@ export function AboutPractice({ doctors }: { doctors: Doctor[] }) {
   const { current } = useSession();
   const otherDoctors = doctors.filter((d) => !hasProfile(d));
 
-  useEffect(() => {
-    window.scrollTo(0, 0);
-  }, []);
+  useEffect(() => { window.scrollTo(0, 0); }, []);
   if (!current) return null;
   const c = current.clinic;
   return (
     <>
-      <h1 className="sr-only">{t('p.aboutTitle')}</h1>
-      <AboutDoctors doctors={doctors} />
+      <h1>{t('p.aboutTitle')}</h1>
       <section className="practice-intro" aria-labelledby="about-clinic-name">
-        {c.cover_url && (
-          <figure className="practice-intro-photo">
-            <img src={c.cover_url} alt="" decoding="async" />
-          </figure>
-        )}
+        {!doctors.some(hasProfile) && c.cover_url && <img className="practice-intro-cover" src={c.cover_url} alt="" decoding="async" />}
         <div className="practice-intro-copy">
           <h2 id="about-clinic-name">{c.name}</h2>
-          {c.city && <p className="practice-intro-place">{c.city}</p>}
-          {paragraphs(c.about ?? '').map((paragraph, i) => (
-            <p key={i}>{paragraph}</p>
-          ))}
+          {paragraphs(c.about ?? '').map((paragraph, i) => <p key={i}>{paragraph}</p>)}
         </div>
       </section>
+      <AboutDoctors doctors={doctors} />
       {otherDoctors.length > 0 && (
         <ul className="doctors" aria-label={t('p.careTeam')}>
           {otherDoctors.map((d) => (
@@ -159,13 +150,11 @@ export function AboutPractice({ doctors }: { doctors: Doctor[] }) {
           ))}
         </ul>
       )}
-      <ClinicContact hoursOpen />
     </>
   );
 }
 
-/** Kako do nas: slika ulaza, adresa, karta i poziv, radno vrijeme (u sažetku piše današnje). */
-export function ClinicContact({ hoursOpen = false }: { hoursOpen?: boolean }) {
+export function ClinicContact() {
   const { t } = useI18n();
   const { current } = useSession();
   if (!current) return null;
@@ -175,18 +164,14 @@ export function ClinicContact({ hoursOpen = false }: { hoursOpen?: boolean }) {
   const order = ['1', '2', '3', '4', '5', '6', '0'] as const;
   const open = order.filter((d) => c.working_hours?.[d]);
   const today = String(new Date().getDay());
-  const todayHours = c.working_hours?.[today as (typeof order)[number]];
   if (!place && !c.phone && !c.entrance_photo_url && !open.length) return null;
 
   return (
     <section className="practice-visit" aria-labelledby="practice-location-title">
       <ClinicLocation photo={c.entrance_photo_url} name={c.name} place={place} phone={c.phone} />
       {open.length > 0 && (
-        <details className="practice-hours" open={hoursOpen}>
-          <summary>
-            <span>{t('p.openingHours')}</span>
-            <span className="hours-today">{todayHours ? t('p.todayHours', { from: todayHours[0], to: todayHours[1] }) : t('p.todayClosed')}</span>
-          </summary>
+        <details className="practice-hours">
+          <summary>{t('p.openingHours')}</summary>
           <dl className="story-hours">
             {open.map((d) => (
               <div key={d} className={d === today ? 'is-today' : undefined}>

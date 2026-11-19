@@ -230,17 +230,16 @@ function Home() {
             <img src={c.cover_url} alt="" fetchPriority="high" decoding="async" />
           </div>
           <div className="practice-welcome-copy">
-            <h1>{greeting}</h1>
+            <p className="practice-greeting">{greeting}</p>
+            <h1>{c.name}</h1>
             {c.about?.trim() && <p className="practice-welcome-description">{paragraphs(c.about)[0]}</p>}
             <div className="practice-welcome-actions">
-              {!next && canBook && (
-                <Link className="practice-primary-action" to="/zakazi">
-                  {t('p.book')}
-                </Link>
-              )}
-              <Link className="practice-price-action" to="/cjenovnik">
-                {t('services.title')}
-              </Link>
+              {next ? (
+                <Link className="practice-primary-action" to="/termini">{t('p.nav.appointments')}</Link>
+              ) : canBook ? (
+                <Link className="practice-primary-action" to="/zakazi">{t('p.book')}</Link>
+              ) : null}
+              <Link className="practice-price-action" to="/cjenovnik">{t('services.title')}</Link>
             </div>
           </div>
         </header>
