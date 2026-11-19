@@ -3216,6 +3216,142 @@ button {
   }
 }
 
+/* Fotografije uz usluge i kontakt ordinacije. */
+.papp-photo-story .story-hero img {
+  --portrait-fade: linear-gradient(to bottom, #000 47%, rgb(0 0 0 / .98) 55%, rgb(0 0 0 / .80) 65%, rgb(0 0 0 / .38) 77%, rgb(0 0 0 / .07) 89%, transparent 97%);
+  -webkit-mask-image: var(--portrait-fade);
+  mask-image: var(--portrait-fade);
+}
+
+.papp-photo-story .story-doc-photo .story-name {
+  margin-top: clamp(-6.5rem, -18vw, -4rem);
+}
+
+.papp-photo-story .story-cover img {
+  border-radius: 18px 18px 0 0;
+  -webkit-mask-image: linear-gradient(#000 50%, rgb(0 0 0 / .85) 63%, rgb(0 0 0 / .27) 82%, transparent 98%);
+  mask-image: linear-gradient(#000 50%, rgb(0 0 0 / .85) 63%, rgb(0 0 0 / .27) 82%, transparent 98%);
+}
+
+.papp-photo-story .story-cover figcaption {
+  position: relative;
+  margin-top: -2.5rem;
+  padding: 0 16px;
+  background: none;
+  color: var(--ink);
+}
+
+.practice-services,
+.practice-location {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  align-items: center;
+  margin: 12px 0 4px;
+}
+
+.practice-services {
+  grid-template-columns: minmax(0, 1.04fr) minmax(0, .96fr);
+  padding: 20px 0;
+}
+
+.practice-service-copy,
+.practice-location-copy {
+  position: relative;
+  grid-column: 1;
+  min-width: 0;
+}
+
+.practice-services h2,
+.practice-location h3 {
+  margin: 0;
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: clamp(1.75rem, 6vw, 2.15rem);
+  line-height: 1.08;
+  font-weight: 550;
+  letter-spacing: -.02em;
+}
+
+.practice-services ul {
+  list-style: none;
+  margin: 14px 0;
+  padding: 0;
+}
+
+.practice-services li {
+  border-top: 1px solid color-mix(in srgb, var(--accent) 27%, var(--line));
+  padding: 7px 0;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.practice-room,
+.practice-location img {
+  position: absolute;
+  z-index: -1;
+  inset: 0 0 0 auto;
+  width: 51%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 53%;
+  border-radius: 0 18px 18px 0;
+  -webkit-mask-image: linear-gradient(to right, transparent, rgb(0 0 0 / .72) 20%, #000 40%);
+  mask-image: linear-gradient(to right, transparent, rgb(0 0 0 / .72) 20%, #000 40%);
+}
+
+.practice-location {
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr);
+  min-height: 210px;
+  margin-top: 0;
+}
+
+.practice-location img {
+  width: 47%;
+  object-position: 50% 16%;
+}
+
+.practice-location-copy {
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+  padding: 12px 0;
+  overflow-wrap: anywhere;
+}
+
+.practice-location-copy p {
+  color: var(--muted);
+}
+
+@media (max-width: 420px) {
+  .practice-services {
+    display: block;
+    padding: 0;
+  }
+
+  .practice-room {
+    position: static;
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1.55;
+    object-position: 50% 62%;
+    border-radius: 16px 16px 0 0;
+    -webkit-mask-image: linear-gradient(#000 49%, rgb(0 0 0 / .87) 62%, rgb(0 0 0 / .35) 81%, transparent 100%);
+    mask-image: linear-gradient(#000 49%, rgb(0 0 0 / .87) 62%, rgb(0 0 0 / .35) 81%, transparent 100%);
+  }
+
+  .practice-service-copy {
+    margin-top: -1.45rem;
+  }
+}
+
+@media (min-width: 560px) {
+  .papp-photo-story .story-cover figcaption {
+    padding: 0;
+  }
+}
+
 .present {
   display: grid;
   gap: 14px;

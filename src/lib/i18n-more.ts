@@ -437,6 +437,10 @@ export const bsMore = {
   'pv.profile': 'Ime, telefon, jezik i lozinku pacijent uređuje sam u svojoj aplikaciji.',
 
   'p.aboutTitle': 'O nama',
+  'p.practiceServices': 'Usluge ordinacije',
+  'p.treatmentRoom': 'Prostor za stomatološke zahvate',
+  'p.practiceEntrance': 'Ulaz u ordinaciju',
+  'p.directions': 'Kako do nas',
   'p.education': 'Obrazovanje i edukacije',
   'p.credentialsPhoto': 'Diplome i certifikati: {name}',
   'settings.present': 'Predstavljanje pacijentima',
@@ -892,6 +896,10 @@ export const enMore: MoreDict = {
   'pv.profile': 'The patient edits their name, phone, language and password in their own app.',
 
   'p.aboutTitle': 'About us',
+  'p.practiceServices': 'Our services',
+  'p.treatmentRoom': 'Dental treatment room',
+  'p.practiceEntrance': 'Practice entrance',
+  'p.directions': 'How to find us',
   'p.education': 'Education and training',
   'p.credentialsPhoto': 'Diplomas and certificates: {name}',
   'settings.present': 'How patients see you',

@@ -14,6 +14,7 @@ import { MessageView, UnreadMessages } from './PatientMessages';
 import { VideoEmbed } from '../components/VideoEmbed';
 import { ExitPreview } from './PreviewSwitch';
 import { AboutDoctors, ClinicStory, hasProfile } from './AboutDoctors';
+import { ClinicServices } from './ClinicPhotos';
 
 interface PatientData {
   /** undefined dok se učitava; null kad nalog nije povezan s kartonom */
@@ -104,7 +105,7 @@ export function PatientApp({ previewId }: { previewId?: string }) {
 
   return (
     <Ctx.Provider value={value}>
-      <div className={`papp${previewId ? ' papp-preview' : ''}`} style={brand}>
+      <div className={`papp${c.services_photo_url || c.entrance_photo_url ? ' papp-photo-story' : ''}${previewId ? ' papp-preview' : ''}`} style={brand}>
         <div className="papp-sticky">
           {previewId && (
             <div className="pv-bar" role="status">
@@ -258,6 +259,8 @@ function Home() {
           ))}
         </section>
       )}
+
+      {c.services_photo_url && <ClinicServices key={c.id} clinicId={c.id} photo={c.services_photo_url} canBook={canBook} />}
 
       <AboutDoctors doctors={doctors} />
 

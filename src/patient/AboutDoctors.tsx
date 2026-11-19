@@ -3,6 +3,7 @@ import { educationItems, paragraphs } from '../lib/format';
 import { useSession } from '../lib/session';
 import type { Doctor } from '../lib/types';
 import { Avatar } from '../components/Avatar';
+import { ClinicLocation } from './ClinicPhotos';
 
 /** Doktor ima šta pokazati pacijentima: veću sliku, biografiju ili obrazovanje. */
 export function hasProfile(d: Doctor): boolean {
@@ -109,13 +110,13 @@ export function ClinicStory({ doctors }: { doctors: Doctor[] }) {
           <img src={c.cover_url} alt="" loading="lazy" />
           <figcaption>
             <h2 id="p-clinic">{c.name}</h2>
-            {place && <p>{place}</p>}
+            {!c.entrance_photo_url && place && <p>{place}</p>}
           </figcaption>
         </figure>
       ) : (
         <header className="story-clinic-head">
           <h2 id="p-clinic">{c.name}</h2>
-          {place && <p className="meta">{place}</p>}
+          {!c.entrance_photo_url && place && <p className="meta">{place}</p>}
         </header>
       )}
       {c.about?.trim() && (
@@ -138,18 +139,22 @@ export function ClinicStory({ doctors }: { doctors: Doctor[] }) {
           ))}
         </ul>
       )}
-      <div className="row">
-        {c.phone && (
-          <a className="btn btn-primary" href={`tel:${c.phone.replace(/\s+/g, '')}`}>
-            {t('p.call', { phone: c.phone })}
-          </a>
-        )}
-        {place && (
-          <a className="btn btn-quiet" href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${c.name}, ${place}`)}`} target="_blank" rel="noreferrer">
-            {t('p.map')}
-          </a>
-        )}
-      </div>
+      {c.entrance_photo_url ? (
+        <ClinicLocation photo={c.entrance_photo_url} name={c.name} place={place} phone={c.phone} />
+      ) : (
+        <div className="row">
+          {c.phone && (
+            <a className="btn btn-primary" href={`tel:${c.phone.replace(/\s+/g, '')}`}>
+              {t('p.call', { phone: c.phone })}
+            </a>
+          )}
+          {place && (
+            <a className="btn btn-quiet" href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${c.name}, ${place}`)}`} target="_blank" rel="noreferrer">
+              {t('p.map')}
+            </a>
+          )}
+        </div>
+      )}
       {open.length > 0 && (
         <dl className="story-hours">
           {open.map((d) => (

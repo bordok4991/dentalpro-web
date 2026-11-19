@@ -32,6 +32,8 @@ export interface Clinic {
   about: string | null;
   /** Slika prostora ordinacije */
   cover_url: string | null;
+  services_photo_url?: string | null;
+  entrance_photo_url?: string | null;
 }
 
 export type Currency = 'KM' | 'EUR' | 'RSD';
